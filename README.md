@@ -1,52 +1,221 @@
-# AI.SPIRE — G2-T1 — Vehicle Manual RAG (Alpha Intelligence)
+# AI.SPIRE — G2-T1 — Vehicle Manual RAG
 
-> Status: **starter scaffold**. This gets the stack running end-to-end with
-> stub logic in place; retrieval quality, prompt tuning, and the full 50+
-> question eval set are next steps .
+## Alpha Intelligence — Chinese Vehicle Manual Assistant
 
-Retrieval-augmented Q&A over Chinese-imported vehicle manuals (BYD, Changan,
-and similar), sourced as **Arabic-ready PDFs** (see Data note below). A user
-picks their vehicle, asks a question in Arabic, and gets a grounded answer
-with a page/section citation in under 30 seconds.
+> **Status: enhanced starter scaffold.**
+> The current version runs the stack end-to-end with the core RAG flow prepared.
+> Next steps: improve retrieval quality, add the full evaluation set, implement reranking, and compare system variants.
+
+A Retrieval-Augmented Generation system for Chinese-imported vehicle manuals (BYD, GAC, Geely, MG, and similar brands).
+
+A car owner selects their vehicle, asks a question in Arabic, and receives a grounded answer from the correct manual with a page/section citation in under 30 seconds. The system targets Arabic-speaking users and uses an **Arabic corpus** internally — English manuals are translated into Arabic during ingestion, not at query time.
+
+---
+
+## Project Goal
+
+Build a local, offline-capable RAG assistant that helps Arabic-speaking drivers understand vehicle manuals by answering questions about:
+
+- Warning lights
+- Maintenance steps
+- Battery and charging
+- Brakes and tire pressure
+- Infotainment settings
+- Safety systems
+- Error/warning codes
+- General vehicle usage instructions
+
+Every answer must be grounded in the retrieved manual context and include a citation (page number and manual metadata).
+
+---
 
 ## Architecture
 
-**Runtime (online) request flow:**
-Car owner → Gradio frontend → FastAPI backend → Arabic text normalizer →
-Chroma vector retrieval (filtered by vehicle model) → Ollama LLM generation
-(grounded, low temperature) → answer + citation back to the user. Every
-exchange is logged to Postgres.
+### Runtime request flow
 
-**Offline ingestion pipeline:**
-Raw manual PDFs (Arabic, a mix of digital text and scanned pages) → PDF
-parser (`pdfplumber`, with a Tesseract OCR fallback for scanned pages) →
-page-aware overlapping chunker → multilingual embedder
-(`sentence-transformers`) → chunk vectors stored in Chroma, chunk + manual
-metadata stored in Postgres.
+```
+Car owner
+→ Gradio frontend
+→ FastAPI backend
+→ Query translation / normalization layer
+→ Rule-based NER extractor
+→ Intent classifier
+→ Metadata filter builder
+→ Chroma vector retrieval
+→ Cross-encoder re-ranker
+→ Ollama LLM generation
+→ Grounded Arabic answer + citation
+→ Query log stored in Postgres
+```
 
-**Data note:** manuals are ingested as Arabic PDFs, not machine-translated
-at query time. Since the source PDFs are a known mix of digitally-generated
-and scanned documents, `pdf_parser.py` tries `pdfplumber` text extraction
-first and only falls back to OCR (Tesseract, Arabic language pack) on pages
-where that comes back empty or near-empty -- keeping ingestion fast for the
-text-native majority while still handling scanned pages without a manual
-sorting step.
+### Offline ingestion pipeline
 
+```
+Raw vehicle manuals
+→ Language detection
+→ Translate Chinese / English manuals into Arabic
+→ PDF parser (pdfplumber)
+→ Tesseract OCR fallback for scanned pages
+→ Arabic text normalization
+→ Page-aware overlapping chunking
+→ Metadata extraction
+→ Multilingual embedding model
+→ Chunk vectors → Chroma
+→ Chunk metadata → Postgres
+```
 
-## Tech stack
+---
+
+## Corpus Language Decision
+
+The project uses **Arabic as the locked corpus language**:
+
+- Arabic manuals are ingested directly.
+- English/Chinese manuals are translated into Arabic during ingestion.
+- User questions are expected in Arabic.
+- Retrieval happens between Arabic user queries and Arabic manual chunks.
+- No translation is performed at query time — this keeps runtime fast and retrieval stable.
+
+**Data note:** `pdfplumber` is tried first on every page. If a page has no usable text layer, Tesseract OCR (Arabic language pack) is used as a fallback. Each chunk keeps page-aware metadata so answers can cite the exact source.
+
+---
+
+## Tech Stack
 
 | Layer | Choice | Why |
 |---|---|---|
-| Frontend | Gradio |Runs locally in Docker |
+| Frontend | Gradio | Simple local UI, runs in Docker, matches HF Spaces demo target |
 | Backend API | FastAPI | Async, typed, easy to containerize |
-| Vector store | Chroma | Free, self-hosted, simple filtered search |
-| Relational DB | Postgres | Manual/chunk metadata, query logs, eval run history |
-| Embeddings | `sentence-transformers` (multilingual, e.g. `intfloat/multilingual-e5-base`) | Manuals and questions are both Arabic (same-language retrieval); kept multilingual over Arabic-only because it's specifically benchmarked on Arabic (MIRACL) and better-supported — swappable via `.env`, no code change |
-| Generation | Ollama (local LLM, e.g. `qwen2.5:7b-instruct`) | Runs fully offline |
-| PDF parsing | `pdfplumber` + Tesseract OCR fallback (`tesseract-ocr-ara`) | Manuals are a mix of digital-text and scanned PDFs; OCR only runs on pages with no usable text layer |
-| Orchestration | Docker Compose | Docker packages the application and all its dependencies into a portable container so it runs consistently on any machine  |
+| Vector Store | Chroma | Free, self-hosted, supports metadata filtering |
+| Relational DB | Postgres | Manual metadata, chunk records, query logs, eval history |
+| Primary Embedding | `paraphrase-multilingual-MiniLM-L12-v2` | Strong multilingual sentence embeddings, good Arabic retrieval |
+| Backup Embedding | AraBERT | Optional Arabic-focused alternative |
+| Re-ranker | Cross-encoder (after vector search) | Improves final ranking of retrieved chunks |
+| Generation | Ollama — `qwen2.5:7b-instruct` | Fully offline, no paid API dependency |
+| PDF Parsing | `pdfplumber` + Tesseract OCR (`tesseract-ocr-ara`) | Handles both digital-text and scanned PDFs |
+| Translation (ingest) | Arabic translation layer | Converts English/Chinese manuals into Arabic corpus |
+| Query Processing | Rule-based normalization, NER, intent classifier | No model training required for MVP |
+| Orchestration | Docker Compose | Consistent across machines |
 
-## Directory structure
+---
+
+## RAG Pipeline — Layer by Layer
+
+### 1. Query Normalization
+
+Prepares the user question before retrieval:
+
+- Removes Arabic diacritics (تشكيل)
+- Normalizes Arabic letter variants: `أ / إ / آ → ا`, `ى → ي`, `ة → ه`
+- Maps automotive dialect/mixed terms to canonical Arabic
+- Translates inline English words to Arabic equivalents
+
+**Example:**
+
+| | Text |
+|---|---|
+| User question | `لمبة battery ظهرت في BYD Dolphin شو اعمل؟` |
+| Normalized | `تحذير البطارية ظهر في BYD Dolphin ما الإجراء المطلوب؟` |
+
+---
+
+### 2. Rule-Based NER Extractor
+
+Extracts automotive entities from the normalized question. No model training required.
+
+```json
+{
+  "make": "BYD",
+  "model": "BYD Dolphin",
+  "trim": null,
+  "year": null,
+  "system": "battery",
+  "error_code": null,
+  "issue_type": "warning light"
+}
+```
+
+**Supported entity types:**
+
+| Entity | Examples |
+|---|---|
+| Make | BYD, Changan, Geely, MG |
+| Model | BYD Dolphin, Changan CS35, Geely Coolray |
+| Vehicle system | brakes, battery, infotainment, tire pressure, airbag, engine |
+| Error / warning code | P0420, EPB warning, TPMS warning |
+| Issue type | warning light, maintenance, safety, settings, troubleshooting |
+
+---
+
+### 3. Intent Classifier
+
+Rule-based in the MVP — no training required.
+
+| Intent | Meaning |
+|---|---|
+| `warning_light` | User asks about a warning symbol or light |
+| `maintenance` | User asks about service or maintenance steps |
+| `troubleshooting` | User has a problem and wants a fix |
+| `settings` | User asks how to change a vehicle setting |
+| `safety` | User asks about safety systems or warnings |
+| `specification` | User asks about values (tire pressure, battery info) |
+| `general_manual_question` | General question from the manual |
+
+---
+
+### 4. Metadata Filtering
+
+Every chunk carries structured metadata. The retriever applies hard filters to prevent cross-model leakage (retrieving the wrong car's manual):
+
+```json
+{
+  "make": "BYD",
+  "model": "Dolphin",
+  "trim": "Standard",
+  "year": "2024",
+  "page": 52,
+  "language": "ar",
+  "manual_name": "BYD_Dolphin_2024_AR.pdf",
+  "section": "Battery warning indicators"
+}
+```
+
+---
+
+### 5. Cross-Encoder Re-ranker
+
+After Chroma returns candidate chunks, a cross-encoder scores each query/chunk pair more carefully:
+
+```
+Vector search retrieves top 10 chunks
+→ Cross-encoder re-ranks them
+→ Top 3 chunks sent to the LLM
+```
+
+A pretrained cross-encoder is used in the MVP. Fine-tuning is optional for later.
+
+---
+
+### 6. Grounded Answer Generation
+
+The LLM receives only the selected manual chunks and must:
+
+- Answer in Arabic
+- Use only the retrieved context
+- Cite the source page
+- Say "not found in the manual" if the context is insufficient
+- Never guess
+
+**Example output:**
+```
+حسب كتيب BYD Dolphin صفحة 52، ظهور تحذير البطارية يعني أن نظام البطارية يحتاج إلى فحص.
+ينصح بإيقاف السيارة في مكان آمن والتواصل مع مركز الصيانة إذا استمر التحذير.
+المصدر: BYD Dolphin 2024 Manual, page 52.
+```
+
+---
+
+## Directory Structure
 
 ```
 aispire-g2t1/
@@ -54,74 +223,203 @@ aispire-g2t1/
 ├── requirements.txt
 ├── .env.example
 ├── db/
-│   └── init.sql              # Postgres schema (manuals, chunks, queries, eval_runs)
+│   └── init.sql
 ├── app/
 │   ├── backend/
 │   │   ├── Dockerfile
-│   │   ├── main.py           # FastAPI entrypoint
-│   │   ├── api/routes.py     # /ask, /health
-│   │   ├── core/config.py    # env-driven settings
-│   │   ├── db/                # SQLAlchemy models + session
-│   │   ├── rag/                # normalizer, retriever, generator, embeddings
-│   │   └── ingestion/          # pdf_parser, chunker, run_ingestion.py
+│   │   ├── main.py
+│   │   ├── api/
+│   │   │   └── routes.py
+│   │   ├── core/
+│   │   │   └── config.py
+│   │   ├── db/
+│   │   │   ├── models.py
+│   │   │   └── session.py
+│   │   ├── rag/
+│   │   │   ├── query_normalizer.py
+│   │   │   ├── ner_extractor.py
+│   │   │   ├── intent_classifier.py
+│   │   │   ├── embeddings.py
+│   │   │   ├── retriever.py
+│   │   │   ├── reranker.py
+│   │   │   └── generator.py
+│   │   └── ingestion/
+│   │       ├── language_detector.py
+│   │       ├── translator.py
+│   │       ├── pdf_parser.py
+│   │       ├── chunker.py
+│   │       └── run_ingestion.py
 │   └── frontend/
 │       ├── Dockerfile
-│       └── gradio_app.py     # thin UI, calls backend over HTTP
+│       └── gradio_app.py
 ├── data/
-│   ├── raw_manuals/           # source PDFs
+│   ├── raw_manuals/
+│   ├── translated_manuals/
 │   ├── processed_chunks/
 │   └── eval/
 │       └── test_questions.sample.json
 ├── scripts/
-│   └── run_ingestion.sh
+│   ├── run_ingestion.sh
+│   └── run_eval.py
 └── tests/
-    └── test_chunker.py
+    ├── test_chunker.py
+    ├── test_query_normalizer.py
+    ├── test_ner_extractor.py
+    ├── test_intent_classifier.py
+    └── test_retriever.py
 ```
 
-## Running it
+---
 
-1. Copy the environment file and adjust if needed:
-   ```
-   cp .env.example .env
-   ```
-2. Drop 2-5 manufacturer PDFs into `data/raw_manuals/` .
+## Running the Project
 
-3. Start the stack:
-   ```
-   docker compose up --build
-   ```
-4. Pull the local LLM into the Ollama container (first run only):
-   ```
-   docker compose exec ollama ollama pull qwen2.5:7b-instruct
-   ```
-5. Run ingestion for each manual. Each PDF is parsed page-by-page; any page
-   with no usable text layer is OCR'd automatically, and the script prints
-   how many pages that affected so you can spot-check them:
-   ```
-   docker compose exec backend bash scripts/run_ingestion.sh
-   ```
-   Manuals default to `--language ar`; pass `--language zh` for the rare
-   Chinese-only manual if one shows up in the data set.
-6. Open the UI at `http://localhost:7860`. Backend API docs at
-   `http://localhost:8000/docs`.
+### 1. Copy the environment file
 
-## Evaluation
+```bash
+cp .env.example .env
+```
 
-`data/eval/test_questions.sample.json` shows the expected format (question,
-manual, expected page, expected answer substring) from the proposal's
-evaluation plan. It currently holds 3 sample questions; the full 50+
-hand-validated set is a Day 1-2 task. Baselines to compare against: TF-IDF, BM25. Primary
-metrics: Recall@K and grounded rate, averaged over 3 seeded runs.
+### 2. Add vehicle manuals
 
-## Roadmap / not yet implemented
+Place PDFs inside `data/raw_manuals/`. The ingestion pipeline handles language detection and translation automatically.
 
-- [ ] Full 50+ question held-out eval set + `scripts/run_eval.py`
-- [ ] Grounded-answer rejection logic (reject if key phrases absent from
-      retrieved context) referenced in the risk table
-- [ ] BM25/TF-IDF baseline comparison harness
-- [ ] OCR quality spot-check once real scanned manuals arrive (Tesseract's
-      Arabic accuracy is decent but not perfect on low-resolution scans --
-      worth a manual review pass on the `ocr_page_count` manuals before
-      trusting those chunks in eval)
-- [ ] Automated Alembic migrations (currently a single `db/init.sql`)
-- [ ] CI (lint + `pytest`) via GitHub Actions
+### 3. Start the stack
+
+```bash
+docker compose up --build
+```
+
+### 4. Pull the local LLM *(first run only)*
+
+```bash
+docker compose exec ollama ollama pull qwen2.5:7b-instruct
+```
+
+### 5. Run ingestion
+
+```bash
+docker compose exec backend bash scripts/run_ingestion.sh
+```
+
+The ingestion pipeline will:
+
+1. Read PDFs from `data/raw_manuals/`
+2. Detect language
+3. Translate English/Chinese manuals into Arabic
+4. Extract text using `pdfplumber`
+5. Use Tesseract OCR for scanned pages
+6. Normalize Arabic text
+7. Chunk pages with overlap
+8. Attach metadata to every chunk
+9. Embed chunks
+10. Store vectors in Chroma
+11. Store metadata in Postgres
+
+### 6. Open the UI
+
+| Service | URL |
+|---|---|
+| Frontend (Gradio) | http://localhost:7860 |
+| Backend API docs | http://localhost:8000/docs |
+
+---
+
+## API Reference
+
+### `POST /ask`
+
+**Request:**
+```json
+{
+  "question": "ظهرت لمبة البطارية في BYD Dolphin شو أعمل؟",
+  "selected_vehicle": "BYD Dolphin"
+}
+```
+
+**Internal processing:**
+```json
+{
+  "normalized_query": "تحذير البطارية ظهر في BYD Dolphin ما الإجراء المطلوب؟",
+  "entities": { "make": "BYD", "model": "Dolphin", "system": "battery", "issue_type": "warning_light" },
+  "intent": "warning_light",
+  "metadata_filter": { "make": "BYD", "model": "Dolphin" }
+}
+```
+
+**Response:**
+```json
+{
+  "answer": "حسب كتيب BYD Dolphin، ظهور تحذير البطارية يعني أن نظام البطارية يحتاج إلى فحص...",
+  "citations": [
+    { "manual_name": "BYD_Dolphin_2024_AR.pdf", "page": 52, "section": "Battery warning indicators" }
+  ],
+  "confidence": "medium"
+}
+```
+
+---
+
+## Evaluation Plan
+
+The evaluation compares multiple system versions — not just a working demo, but measurable improvement:
+
+| System Variant | Expected Result |
+|---|---|
+| Baseline RAG (no normalization/translation) | Sometimes fails on Arabic dialect queries |
+| RAG + query normalization | Better match between user question and manual text |
+| RAG + NER + metadata filtering | Accurate retrieval from the correct vehicle/section |
+| RAG + citation | Trustworthy, grounded answers |
+| RAG + cross-encoder re-ranker | Fewer irrelevant chunks in final context |
+
+### Evaluation dataset format
+
+```json
+{
+  "question": "كيف أضبط ضغط الإطارات في Changan CS35؟",
+  "manual": "Changan_CS35_2023_AR.pdf",
+  "make": "Changan",
+  "model": "CS35",
+  "expected_page": 84,
+  "expected_answer_substring": "ضغط الإطارات",
+  "intent": "specification",
+  "system": "tire_pressure"
+}
+```
+
+### Metrics
+
+| Metric | Meaning |
+|---|---|
+| Recall@K | Did the correct chunk/page appear in the top K results? |
+| MRR | How high was the first correct result ranked? |
+| Grounded Rate | Did the answer stay faithful to the retrieved context? |
+| Citation Accuracy | Did the answer cite the correct manual/page? |
+| Rejection Accuracy | Did the system refuse when the answer was not in the manual? |
+| Latency | Did the system answer within the 30-second target? |
+
+### Baselines
+
+- TF-IDF retrieval
+- BM25 retrieval
+- Plain vector RAG
+- Vector RAG + query normalization
+- Vector RAG + NER filtering
+- Vector RAG + NER filtering + cross-encoder re-ranking
+
+---
+
+## Roadmap
+
+- [ ] Full 50+ question held-out evaluation set
+- [ ] `scripts/run_eval.py` — automated evaluation harness
+- [ ] Query normalization tests
+- [ ] Rule-based NER extractor implementation
+- [ ] Rule-based intent classifier implementation
+- [ ] Metadata filter builder
+- [ ] Cross-encoder re-ranker after vector retrieval
+- [ ] BM25 and TF-IDF baseline comparison
+- [ ] Grounded-answer rejection logic
+- [ ] Citation accuracy scoring
+- [ ] OCR quality spot-check report (review `ocr_page_count` manuals)
+- [ ] GitHub Actions CI — lint + pytest
+- [ ] Replace `db/init.sql` with Alembic migrations
