@@ -1,63 +1,31 @@
 """
 manual_loader.py
 
-Scans data/raw_manuals/ for vehicle manual PDFs and extracts basic
-metadata (make, model, year) for every manual found. Every valid PDF
-under a make subfolder is loaded — there is no filename-based
-reject/skip list, because the real repo's naming isn't strict enough
-for that (year is often missing, and there's no language token).
-
-Real folder structure (one subfolder per make):
-
-    data/raw_manuals/
-    ├── BYD/
-    │   ├── BYD_DOLPHIN_2025.pdf
-    │   ├── BYD_SEAGULL.pdf              <- no year
-    │   └── BYD_SONG_PLUS_DM_I.pdf       <- no year
-    ├── GAC/
-    │   └── GAC_GS4.pdf                  <- no year
-    ├── HAVAL/
-    │   └── HAVAL_H1_2017.pdf            <- has year
-    └── ...
-
-Metadata extraction rules:
-- MAKE  -> the subfolder name the PDF lives in (e.g. "BYD"). This is
-           more reliable than trying to parse it out of the filename,
-           since every file is already organized that way.
-- MODEL -> the filename, with the make prefix stripped (if repeated
-           there) and the year stripped (if present), remaining
-           underscores turned into spaces.
-- YEAR  -> a 4-digit token anywhere in the filename. None if no such
-           token exists — this is common and NOT treated as invalid.
-
-Language is intentionally NOT extracted here. None of the manuals in
-the real repo carry a language token in their filename, and per the
-project's corpus-language decision, source language gets handled by
-the translation step during ingestion, not the loader.
+Scans data/raw_manuals/ (organized as one subfolder per vehicle make)
+and extracts basic metadata (make, model, year) for every manual PDF
+found. Make comes from the subfolder name; model and year are parsed
+out of the filename, which is not consistently delimited across the
+real data (mix of underscores, spaces, and hyphens). Year is optional
+— many real filenames don't include one, and that's not treated as
+invalid. A PDF with no make subfolder is skipped and logged, since we
+have no reliable way to attribute its make.
 """
 
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, asdict
+from dataclasses import asdict
 from pathlib import Path
 from typing import List, Optional
 import re
+
+from models.manual_metadata import ManualMetadata
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
 )
 logger = logging.getLogger("manual_loader")
-
-
-@dataclass
-class ManualMetadata:
-    """Structured metadata returned for every manual found."""
-    make: str
-    model: str
-    year: Optional[str]
-    file_path: str
 
 
 def _parse_manual(pdf_path: Path, make_folder: str) -> ManualMetadata:
@@ -85,12 +53,20 @@ def _parse_manual(pdf_path: Path, make_folder: str) -> ManualMetadata:
     #    behaves the same regardless of the original filename style.
     remainder = re.sub(r"[_\-]+", " ", stem)
 
-    # 2. Extract year (search, not split — works regardless of position)
+    # 2. Extract year(s) — search for ALL 4-digit year-like tokens, not just
+    #    the first. Some real filenames have two (e.g. "..._2020_2023.pdf"
+    #    meaning a production range). If two+ are found, join as a range
+    #    ("2020-2023"); if one, use it as-is. Either way, remove every
+    #    matched year token from the remainder so none of them leak into
+    #    the model name.
     year: Optional[str] = None
-    year_match = re.search(r"\b(19|20)\d{2}\b", remainder)
-    if year_match:
-        year = year_match.group(0)
-        remainder = remainder[:year_match.start()] + remainder[year_match.end():]
+    year_matches = list(re.finditer(r"\b(19|20)\d{2}\b", remainder))
+    if year_matches:
+        years_found = [m.group(0) for m in year_matches]
+        year = years_found[0] if len(years_found) == 1 else f"{years_found[0]}-{years_found[-1]}"
+        # Remove matched spans from the end backwards so earlier offsets stay valid
+        for m in reversed(year_matches):
+            remainder = remainder[:m.start()] + remainder[m.end():]
 
     # 3. Strip the make name if it's repeated in the filename
     #    (case-insensitive, word boundary so "GS4" doesn't get mangled by "S4")
@@ -171,7 +147,7 @@ def load_manuals(raw_manuals_dir: str = "data/raw_manuals") -> List[dict]:
 
 
 if __name__ == "__main__":
-    # Quick manual test run: python manual_loader.py
+    # Quick manual test run: python -m ingestion.manual_loader
     manuals = load_manuals()
     for m in manuals:
         print(m)
