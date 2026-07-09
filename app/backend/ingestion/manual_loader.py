@@ -146,4 +146,3 @@ def load_manuals(raw_manuals_dir: str = "data/raw_manuals") -> List[dict]:
     return results
 
 
-return results
