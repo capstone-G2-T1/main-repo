@@ -53,7 +53,7 @@ Car owner
 ```
 Raw vehicle manuals
 → Language detection
-→ Translate Chinese / English manuals into Arabic
+→ Translate English manuals into Arabic
 → PDF parser (pdfplumber)
 → Tesseract OCR fallback for scanned pages
 → Arabic text normalization
@@ -71,7 +71,7 @@ Raw vehicle manuals
 The project uses **Arabic as the locked corpus language**:
 
 - Arabic manuals are ingested directly.
-- English/Chinese manuals are translated into Arabic during ingestion.
+- English manuals are translated into Arabic during ingestion.
 - User questions are expected in Arabic.
 - Retrieval happens between Arabic user queries and Arabic manual chunks.
 - No translation is performed at query time — this keeps runtime fast and retrieval stable.
@@ -93,7 +93,7 @@ The project uses **Arabic as the locked corpus language**:
 | Re-ranker | Cross-encoder (after vector search) | Improves final ranking of retrieved chunks |
 | Generation | Ollama — `qwen2.5:7b-instruct` | Fully offline, no paid API dependency |
 | PDF Parsing | `pdfplumber` + Tesseract OCR (`tesseract-ocr-ara`) | Handles both digital-text and scanned PDFs |
-| Translation (ingest) | Arabic translation layer | Converts English/Chinese manuals into Arabic corpus |
+| Translation (ingest) | Arabic translation layer | Converts English manuals into Arabic corpus |
 | Query Processing | Rule-based normalization, NER, intent classifier | No model training required for MVP |
 | Orchestration | Docker Compose | Consistent across machines |
 
@@ -305,7 +305,7 @@ The ingestion pipeline will:
 
 1. Read PDFs from `data/raw_manuals/`
 2. Detect language
-3. Translate English/Chinese manuals into Arabic
+3. Translate English manuals into Arabic
 4. Extract text using `pdfplumber`
 5. Use Tesseract OCR for scanned pages
 6. Normalize Arabic text
