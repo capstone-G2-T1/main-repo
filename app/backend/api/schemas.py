@@ -1,104 +1,53 @@
-import time
-
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
-
-from app.backend.db.models import QueryLog
-from app.backend.db.session import get_db
-
-from app.backend.api.schemas import (
-    AskRequest,
-    AskResponse,
-    CitationSchema,
-    QueryLogResponse,
-)
-
-router = APIRouter()
+from typing import Any
+from pydantic import BaseModel, field_validator
 
 
-def _build_chunks_summary(chunks: list[dict] | None) -> list[dict] | None:
-    if not chunks:
-        return None
+class AskRequest(BaseModel):
+    question: str
+    selected_vehicle: str
 
-    summary = []
+    @field_validator("question")
+    @classmethod
+    def question_must_not_be_empty(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("السؤال لا يمكن أن يكون فارغاً")
+        return v.strip()
 
-    for chunk in chunks:
-        summary.append({
-            "manual_name": chunk.get("manual_name"),
-            "page": chunk.get("page"),
-            "section": chunk.get("section"),
-            "score": chunk.get("score"),
-            "text_preview": (chunk.get("text") or "")[:200],
-        })
-
-    return summary
-
-
-@router.post("/ask", response_model=AskResponse)
-def ask(request: AskRequest, db: Session = Depends(get_db)):
-
-    start_time = time.perf_counter()
-
-    # Placeholder values until RAG is implemented
-    normalized_question = request.question
-    ner_entities = None
-    intent = None
-    metadata_filter = None
-    raw_chunks = []
-
-    answer = "الراوية غير متوفرة بعد — قيد التطوير"
-    citations = []
-    confidence = "low"
-
-    latency_seconds = round(time.perf_counter() - start_time, 4)
-
-    log = QueryLog(
-        original_question=request.question,
-        selected_vehicle=request.selected_vehicle,
-        normalized_question=normalized_question,
-        ner_entities=ner_entities,
-        intent=intent,
-        metadata_filter=metadata_filter,
-        retrieved_chunks_summary=_build_chunks_summary(raw_chunks),
-        answer=answer,
-        citations=citations,
-        confidence=confidence,
-        latency_seconds=latency_seconds,
-    )
-
-    db.add(log)
-    db.commit()
-    db.refresh(log)
-
-    return AskResponse(
-        answer=answer,
-        citations=[CitationSchema(**c) for c in citations],
-        confidence=confidence,
-        latency_seconds=latency_seconds,
-    )
+    @field_validator("selected_vehicle")
+    @classmethod
+    def vehicle_must_not_be_empty(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("يجب اختيار سيارة")
+        return v.strip()
 
 
-@router.get("/query-logs", response_model=list[QueryLogResponse])
-def get_query_logs(
-    limit: int = Query(default=50, ge=1, le=500),
-    db: Session = Depends(get_db),
-):
+class CitationSchema(BaseModel):
+    manual_name: str
+    page: int
+    section: str | None = None
 
-    logs = (
-        db.query(QueryLog)
-        .order_by(QueryLog.created_at.desc())
-        .limit(limit)
-        .all()
-    )
 
-    return [
-        QueryLogResponse(
-            **{
-                c.name: getattr(log, c.name)
-                for c in QueryLog.__table__.columns
-                if c.name != "created_at"
-            },
-            created_at=log.created_at.isoformat(),
-        )
-        for log in logs
-    ]
+class AskResponse(BaseModel):
+    answer: str
+    citations: list[CitationSchema]
+    confidence: str
+    latency_seconds: float
+
+
+class QueryLogResponse(BaseModel):
+    id: int
+    original_question: str
+    selected_vehicle: str
+    normalized_question: str | None
+    ner_entities: Any | None
+    intent: str | None
+    metadata_filter: Any | None
+    retrieved_chunks_summary: Any | None
+    answer: str | None
+    citations: Any | None
+    confidence: str | None
+    latency_seconds: float | None
+    created_at: str
+
+    class Config:
+        from_attributes = True
