@@ -14,7 +14,7 @@ EXCEPTION
 END $$;
 
 DO $$ BEGIN
-    CREATE TYPE language_code AS ENUM ('ar', 'en', 'zh');
+    CREATE TYPE language_code AS ENUM ('ar', 'en');
 EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;

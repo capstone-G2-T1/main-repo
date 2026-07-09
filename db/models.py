@@ -13,7 +13,7 @@ from db.session import Base
 
 
 user_role_enum = Enum("admin", "user", name="user_role", create_type=False)
-language_code_enum = Enum("ar", "en", "zh", name="language_code", create_type=False)
+language_code_enum = Enum("ar", "en", name="language_code", create_type=False)
 intent_type_enum = Enum(
     "warning_light",
     "maintenance",
