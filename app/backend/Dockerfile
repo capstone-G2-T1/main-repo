@@ -8,10 +8,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tesseract-ocr-ara \
     && rm -rf /var/lib/apt/lists/*
 
+# requirements.txt now lives at the repo root, not inside app/backend
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+# Copy just the backend source code
+COPY app/backend/ .
 
 EXPOSE 8000
 
