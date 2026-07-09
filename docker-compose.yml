@@ -1,0 +1,106 @@
+services:
+
+  # ---------------------------------------------------------
+  # FastAPI backend (RAG API, ingestion pipeline, /ask route)
+  # ---------------------------------------------------------
+  backend:
+    build:
+      context: ./app/backend
+      dockerfile: Dockerfile
+    container_name: aispire_backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_HOST=postgres
+      - CHROMA_HOST=chroma
+      - OLLAMA_HOST=ollama
+    volumes:
+      - ./app/backend:/app          # live code reload during dev
+      - ./data:/app/data            # raw + translated manuals, eval sets
+    depends_on:
+      - postgres
+      - chroma
+      - ollama
+    restart: unless-stopped
+    networks:
+      - aispire_net
+
+  # ---------------------------------------------------------
+  # Next.js frontend
+  # ---------------------------------------------------------
+  frontend:
+    build:
+      context: ./app/frontend
+      dockerfile: Dockerfile
+    container_name: aispire_frontend
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - aispire_net
+
+  # ---------------------------------------------------------
+  # Postgres — manual metadata, chunk records, query logs
+  # ---------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: aispire_postgres
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-aispire}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-aispire}
+      - POSTGRES_DB=${POSTGRES_DB:-aispire_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    networks:
+      - aispire_net
+
+  # ---------------------------------------------------------
+  # Chroma — vector store for manual chunk embeddings
+  # ---------------------------------------------------------
+  chroma:
+    image: chromadb/chroma:latest
+    container_name: aispire_chroma
+    ports:
+      - "8001:8000"   # mapped to host 8001 so it doesn't clash with backend's 8000
+    volumes:
+      - chroma_data:/chroma/chroma
+    restart: unless-stopped
+    networks:
+      - aispire_net
+
+  # ---------------------------------------------------------
+  # Ollama — local LLM generation (qwen2.5:7b-instruct)
+  # ---------------------------------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    container_name: aispire_ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    networks:
+      - aispire_net
+    # NOTE: pull the model after the container is up:
+    # docker compose exec ollama ollama pull qwen2.5:7b-instruct
+
+networks:
+  aispire_net:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  chroma_data:
+  ollama_data:
