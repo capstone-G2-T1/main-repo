@@ -146,8 +146,4 @@ def load_manuals(raw_manuals_dir: str = "data/raw_manuals") -> List[dict]:
     return results
 
 
-if __name__ == "__main__":
-    # Quick manual test run: python -m ingestion.manual_loader
-    manuals = load_manuals()
-    for m in manuals:
-        print(m)
+return results
