@@ -218,7 +218,7 @@ The LLM receives only the selected manual chunks and must:
 ## Directory Structure
 
 ```
-aispire-g2t1/
+main-repo/
 ├── docker-compose.yml
 ├── requirements.txt
 ├── .env.example

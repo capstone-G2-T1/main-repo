@@ -1,6 +1,6 @@
 """
-query_normalizer.py
--------------------
+app/backend/rag/query_normalizer.py
+
 Normalizes Arabic user questions before retrieval.
 
 Pipeline (in order):
@@ -11,7 +11,6 @@ Pipeline (in order):
     5. Strip extra whitespace
 """
 import re
-import unicodedata
 
 
 _TASHKEEL = re.compile(
@@ -29,8 +28,8 @@ _LETTER_MAP: dict[str, str] = {
     "إ": "ا",
     "آ": "ا",
     "ى": "ي",
-    "ة": "ه",   # optional — keeps matching stable
-    "\u0671": "ا",  # wasla alef
+    "ة": "ه",
+    "\u0671": "ا",
 }
 
 _EN_TO_AR: dict[str, str] = {
@@ -116,7 +115,6 @@ def _replace_dialect_terms(text: str) -> str:
 
 def _clean_whitespace(text: str) -> str:
     return " ".join(text.split())
-
 
 
 

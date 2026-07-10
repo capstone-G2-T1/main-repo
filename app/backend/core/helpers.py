@@ -1,21 +1,27 @@
+"""
+app/backend/core/helpers.py
 
-# Helper — build retrieved_chunks_summary
+Helper functions for the Vehicle Manual RAG backend.
+"""
 
-def _build_chunks_summary(chunks: list[dict] | None) -> list[dict] | None:
+def _build_chunks_summary(chunks: list | None) -> list[dict]:
     """
-    Returns metadata + first 200 chars of text for each chunk.
-    Returns None safely when chunks is empty or None.
+    Build a lightweight summary of retrieved chunks for logging.
+
+    Safe to call even if the pipeline doesn't yet expose retrieval results.
     """
     if not chunks:
-        return None
+        return []
 
     summary = []
+
     for chunk in chunks:
-        summary.append({
-            "manual_name": chunk.get("manual_name"),
-            "page":        chunk.get("page"),
-            "section":     chunk.get("section"),
-            "score":       chunk.get("score"),
-            "text_preview": (chunk.get("text") or "")[:200],
-        })
+        summary.append(
+            {
+                "manual": chunk.get("manual"),
+                "page": chunk.get("page"),
+                "score": chunk.get("score"),
+            }
+        )
+
     return summary
