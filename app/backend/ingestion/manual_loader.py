@@ -1,5 +1,5 @@
 """
-manual_loader.py
+app/backend/ingestion/manual_loader.py
 
 Scans data/raw_manuals/ (organized as one subfolder per vehicle make)
 and extracts basic metadata (make, model, year) for every manual PDF
@@ -13,13 +13,14 @@ have no reliable way to attribute its make.
 
 from __future__ import annotations
 
-import logging
-from dataclasses import asdict
-from pathlib import Path
-from typing import List, Optional
 import re
+import logging
 
-from models.manual_metadata import ManualMetadata
+from pathlib import Path
+from dataclasses import asdict
+from typing import List, Optional
+from app.backend.api.schemas import ManualMetadata
+
 
 logging.basicConfig(
     level=logging.INFO,

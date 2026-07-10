@@ -7,7 +7,7 @@ API schemas for the Vehicle Manual RAG backend.
 from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
@@ -88,3 +88,23 @@ class RagResult(BaseModel):
     intent: str | None = None
     entities: dict | None = None
     normalized_query: str | None = None
+
+
+class ManualMetadata(BaseModel):
+    # --- populated by manual_loader.py from the folder/filename ---
+    make: str
+    model: str
+    year: Optional[str]
+    file_path: str
+ 
+    # --- populated by pdf_parser.py ---
+    total_pages: Optional[int] = None
+    ocr_page_count: int = 0
+    extraction_errors: list[str] = Field(default_factory=list)
+ 
+    # --- populated by language_detector.py ---
+    language: str = "en"
+ 
+    # --- populated by translator.py ---
+    is_translated: bool = False
+    translated_path: Optional[str] = None
