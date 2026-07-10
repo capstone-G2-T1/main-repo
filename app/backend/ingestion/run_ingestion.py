@@ -17,10 +17,10 @@ from __future__ import annotations
 
 import logging
 
-from app.backend.ingestion.chunker import chunk_manual, save_chunks
-from app.backend.ingestion.manual_processor import process_manual
-from app.backend.ingestion.store import IngestionSummary, store_manual_chunks
-from app.backend.api.schemas import ManualMetadata
+from ingestion.chunker import chunk_manual, save_chunks
+from ingestion.manual_processor import process_manual
+from ingestion.store import IngestionSummary, store_manual_chunks
+from api.schemas import ManualMetadata
 
 logger = logging.getLogger("run_ingestion")
 

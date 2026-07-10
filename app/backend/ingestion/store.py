@@ -6,7 +6,7 @@ metadata filters) and Postgres (vehicle/manual/chunk records), skipping
 manuals that have already been ingested so re-running ingestion is safe.
 
 This module deliberately reuses the existing SQLAlchemy models/session
-from app.backend.db (the real Postgres schema) rather than re-defining
+from the root db package (the real Postgres schema) rather than re-defining
 storage separately -- unlike translation, storage has no query-time-leak
 concern, so sharing the schema definitions here is the right trade-off.
 """
@@ -18,12 +18,12 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 
-from app.backend.db.models import Manual, ManualChunk, Vehicle
-from app.backend.db.session import SessionLocal
-from app.backend.ingestion.chunker import Chunk
-from app.backend.ingestion.embedder import embed_texts
-from app.backend.ingestion.vector_store import upsert_chunks
-from app.backend.api.schemas import ManualMetadata
+from db.models import Manual, ManualChunk, Vehicle
+from db.session import SessionLocal
+from ingestion.chunker import Chunk
+from ingestion.embedder import embed_texts
+from ingestion.vector_store import upsert_chunks
+from api.schemas import ManualMetadata
 
 logger = logging.getLogger("store")
 

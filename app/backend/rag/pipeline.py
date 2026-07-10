@@ -12,8 +12,8 @@ the manual" style stub. Swapping in the real layers later should not require
 any change to the `/ask` route itself.
 """
 
-from app.backend.api.schemas import RagResult
-from app.backend.rag.query_normalizer import normalize_query
+from api.schemas import RagResult
+from rag.query_normalizer import normalize_query
 
 
 def run_rag_pipeline(question: str, selected_vehicle: str | None = None) -> RagResult:

@@ -8,7 +8,7 @@ separate module -- this file is ingestion-only (write path).
 
 Host/port/collection name default to the same values used in
 docker-compose.yml / .env / core/config.py, but are read from the
-environment here (rather than importing app.backend.core.config) so the
+environment here (rather than importing the application settings module) so the
 ingestion package stays independent of the FastAPI app package, same as
 the rest of ingestion/*.
 """

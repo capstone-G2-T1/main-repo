@@ -19,7 +19,7 @@ import logging
 from pathlib import Path
 from dataclasses import asdict
 from typing import List, Optional
-from app.backend.api.schemas import ManualMetadata
+from api.schemas import ManualMetadata
 
 
 logging.basicConfig(

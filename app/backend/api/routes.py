@@ -11,17 +11,17 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.backend.api.schemas import (
+from api.schemas import (
     AskRequest,
     AskResponse,
     HealthResponse,
     ManualResponse,
     QueryLogResponse,
 )
-from app.backend.db.models import Manual, QueryLog, Vehicle
-from app.backend.db.session import get_db
-from app.backend.rag.pipeline import run_rag_pipeline
-from app.backend.core.helpers import _build_chunks_summary
+from db.models import Manual, QueryLog, Vehicle
+from db.session import get_db
+from rag.pipeline import run_rag_pipeline
+from core.helpers import _build_chunks_summary
 
 router = APIRouter()
 
