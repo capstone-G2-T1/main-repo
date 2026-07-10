@@ -1,7 +1,9 @@
 """Authentication endpoints."""
 
 import os
-from datetime import datetime, timedelta
+import secrets
+import hashlib
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -10,7 +12,7 @@ from pydantic import BaseModel, EmailStr, field_validator
 from jose import jwt
 
 from app.backend.db.session import get_db
-from app.backend.db.models import User
+from app.backend.db.models import User, UserSession
 from app.backend.core.security import hash_password, verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -19,6 +21,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 SECRET_KEY = os.getenv("SECRET_KEY", "change-me-in-production")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
+REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 
 # ── Schemas ───────────────────────────────────────────────────────────────────
@@ -51,13 +54,18 @@ class LoginRequest(BaseModel):
 
 class TokenResponse(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str = "bearer"
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
 
 
 # ── Utilities ─────────────────────────────────────────────────────────────────
 
 def create_access_token(user: User) -> str:
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
         "sub": str(user.id),
         "email": user.email,
@@ -65,6 +73,16 @@ def create_access_token(user: User) -> str:
         "exp": expire,
     }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def generate_refresh_token() -> str:
+    """Generate a secure random refresh token."""
+    return secrets.token_urlsafe(64)
+
+
+def hash_refresh_token(token: str) -> str:
+    """Hash the refresh token before storing — never store the raw token."""
+    return hashlib.sha256(token.encode()).hexdigest()
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -130,5 +148,24 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
             detail="Account is inactive.",
         )
 
-    # 4. ارجع الـ token
-    return TokenResponse(access_token=create_access_token(user))
+    # 4. اعمل refresh token واحفظه مهشش بالـ sessions table
+    raw_refresh_token = generate_refresh_token()
+    expires_at = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+
+    session = UserSession(
+        user_id=user.id,
+        token_hash=hash_refresh_token(raw_refresh_token),
+        expires_at=expires_at,
+    )
+    db.add(session)
+    db.commit()
+
+    return TokenResponse(
+        access_token=create_access_token(user),
+        refresh_token=raw_refresh_token,
+    )
+
+
+@router.post("/refresh", response_model=TokenResponse)
+def refresh(payload: RefreshRequest, db: Session = Depends(get_db)):
+    # 1.
