@@ -1,27 +1,32 @@
-from typing import Any
-from pydantic import BaseModel, field_validator
+"""
+app/backend/api/schemas.py
 
+API schemas for the Vehicle Manual RAG backend.
+"""
+
+from datetime import datetime
+from decimal import Decimal
+from uuid import UUID
+from typing import Any
+
+from pydantic import BaseModel, Field
+
+class HealthResponse(BaseModel):
+    status: str = "ok"
+ 
+class RootResponse(BaseModel):
+    project: str
+    version: str
+    docs_url: str = "/docs"
 
 class AskRequest(BaseModel):
-    question: str
-    selected_vehicle: str
-
-    @field_validator("question")
-    @classmethod
-    def question_must_not_be_empty(cls, v: str) -> str:
-        if not v or not v.strip():
-            raise ValueError("السؤال لا يمكن أن يكون فارغاً")
-        return v.strip()
-
-    @field_validator("selected_vehicle")
-    @classmethod
-    def vehicle_must_not_be_empty(cls, v: str) -> str:
-        if not v or not v.strip():
-            raise ValueError("يجب اختيار سيارة")
-        return v.strip()
+    question: str = Field(..., description="User question in Arabic.")
+    selected_vehicle: str | None = Field(
+        default=None, description="Optional vehicle the user has selected, e.g. 'BYD Dolphin'."
+    )
 
 
-class CitationSchema(BaseModel):
+class Citation(BaseModel):
     manual_name: str
     page: int
     section: str | None = None
@@ -29,25 +34,57 @@ class CitationSchema(BaseModel):
 
 class AskResponse(BaseModel):
     answer: str
-    citations: list[CitationSchema]
-    confidence: str
-    latency_seconds: float
-
+    citations: list[Citation] = Field(default_factory=list)
+    confidence: str = "low"
+    latency_ms: float
+    intent: str | None = None
+    entities: dict | None = None 
 
 class QueryLogResponse(BaseModel):
-    id: int
-    original_question: str
-    selected_vehicle: str
-    normalized_question: str | None
-    ner_entities: Any | None
-    intent: str | None
-    metadata_filter: Any | None
-    retrieved_chunks_summary: Any | None
-    answer: str | None
-    citations: Any | None
-    confidence: str | None
-    latency_seconds: float | None
-    created_at: str
+    id: UUID
+    session_id: UUID | None = None
+    vehicle_id: UUID | None = None
 
-    class Config:
-        from_attributes = True
+    raw_question: str
+    normalized_question: str | None = None
+
+    intent: str | None = None
+    entities: dict[str, Any] | None = None
+
+    metadata_filter: dict[str, Any] | None = None
+    retrieved_chunks: list[Any] | dict[str, Any] | None = None
+
+    answer: str | None = None
+    citations: list[Any] | dict[str, Any] | None = None
+    confidence: str | None = None
+
+    latency_seconds: Decimal | None = None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+class VehicleResponse(BaseModel):
+    make: str
+    model: str
+    trim: str | None = None
+    year: int
+
+    model_config = {"from_attributes": True}
+
+
+class ManualResponse(BaseModel):
+    id: UUID
+    manual_name: str
+    language: str
+    page_count: int | None
+    vehicle: VehicleResponse
+
+    model_config = {"from_attributes": True}
+
+class RagResult(BaseModel):
+    answer: str
+    citations: list[dict] = Field(default_factory=list)
+    confidence: str = "low"
+    intent: str | None = None
+    entities: dict | None = None
+    normalized_query: str | None = None
