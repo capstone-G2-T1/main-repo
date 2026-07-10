@@ -1,6 +1,6 @@
 """
 Application configuration.
- 
+
 Loads settings from environment variables (and a local .env file when present)
 using pydantic-settings. All other modules should import `settings` from this
 file instead of calling os.environ directly, so configuration stays in one
@@ -8,7 +8,6 @@ place.
 """
 from typing import List
 from functools import lru_cache
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -21,7 +20,7 @@ class Settings(BaseSettings):
     APP_VERSION: str = "0.1.0"
     ENVIRONMENT: str = "development"
     DEBUG: bool = True
- 
+
     # --- API ---------------------------------------------------------------
     API_V1_PREFIX: str = "/api/v1"
     CORS_ORIGINS: List[str] = ["*"]
@@ -38,26 +37,33 @@ class Settings(BaseSettings):
     CHROMA_HOST: str = "chroma"
     CHROMA_PORT: int = 8000
     CHROMA_COLLECTION_NAME: str = "vehicle_manuals_ar"
- 
-    # --- Ollama (local LLM) --------------------------------------------------
+
+    # --- Ollama (local LLM) ------------------------------------------------
     OLLAMA_HOST: str = "http://ollama:11434"
     OLLAMA_MODEL: str = "qwen2.5:7b-instruct"
- 
-    # --- Embeddings / Reranker ----------------------------------------------
+
+    # --- Embeddings / Reranker ---------------------------------------------
     EMBEDDING_MODEL: str = "paraphrase-multilingual-MiniLM-L12-v2"
     RERANKER_MODEL: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
- 
-    # --- Retrieval -----------------------------------------------------------
+
+    # --- Retrieval ---------------------------------------------------------
     RETRIEVAL_TOP_K: int = 10
     RERANK_TOP_N: int = 3
- 
+
+    # --- JWT & Auth --------------------------------------------------------
+    JWT_SECRET_KEY: str = "change-this-secret-in-production"
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    PASSWORD_HASH_SCHEME: str = "bcrypt"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore",
     )
- 
+
     @property
     def sqlalchemy_database_url(self) -> str:
         """Build the Postgres connection string if DATABASE_URL isn't set explicitly."""
@@ -67,12 +73,12 @@ class Settings(BaseSettings):
             f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}"
             f"@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
- 
- 
+
+
 @lru_cache
 def get_settings() -> Settings:
     """Cached settings accessor so the .env file is only parsed once."""
     return Settings()
- 
- 
+
+
 settings = get_settings()
