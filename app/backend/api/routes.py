@@ -18,12 +18,14 @@ from app.backend.api.schemas import (
     ManualResponse,
     QueryLogResponse,
 )
-from app.backend.db.models import Manual, QueryLog, Vehicle
+from app.backend.db.models import Manual, QueryLog, User, Vehicle
 from app.backend.db.session import get_db
 from app.backend.rag.pipeline import run_rag_pipeline
 from app.backend.core.helpers import _build_chunks_summary
+from app.backend.core.dependencies import get_current_user
 
 router = APIRouter()
+
 
 @router.get("/health", response_model=HealthResponse, tags=["system"])
 def health_check() -> HealthResponse:
@@ -31,16 +33,22 @@ def health_check() -> HealthResponse:
     return HealthResponse(status="ok")
 
 
+@router.get("/auth/me", tags=["auth"])
+def get_me(current_user: User = Depends(get_current_user)) -> dict:
+    """Return the currently logged-in user."""
+    return {
+        "id": str(current_user.id),
+        "email": current_user.email,
+        "role": current_user.role,
+        "is_active": current_user.is_active,
+    }
+
+
 @router.post("/ask", response_model=AskResponse, tags=["rag"])
 def ask_question(
     payload: AskRequest,
     db: Session = Depends(get_db),
 ) -> AskResponse:
-    """
-    Answer a user question using the RAG pipeline and
-    store the interaction for later evaluation.
-    """
-
     if not payload.question.strip():
         raise HTTPException(
             status_code=422,
@@ -71,11 +79,11 @@ def ask_question(
 
     if vehicle:
         vehicle_id = vehicle.id
-        
+
     log_entry = QueryLog(
         raw_question=payload.question,
         normalized_question=result.normalized_query,
-        vehicle_id=vehicle_id,  
+        vehicle_id=vehicle_id,
         entities=result.entities,
         intent=result.intent,
         answer=result.answer,
@@ -97,13 +105,13 @@ def ask_question(
         )
 
     return AskResponse(
-    answer=result.answer,
-    citations=result.citations,
-    confidence=result.confidence,
-    latency_ms=latency_ms,
-    intent=result.intent,
-    entities=result.entities,
-)
+        answer=result.answer,
+        citations=result.citations,
+        confidence=result.confidence,
+        latency_ms=latency_ms,
+        intent=result.intent,
+        entities=result.entities,
+    )
 
 
 @router.get(
@@ -147,9 +155,7 @@ def list_query_logs(
     offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
 ) -> list[QueryLog]:
-    """
-    Return recent query logs ordered from newest to oldest.
-    """
+    """Return recent query logs ordered from newest to oldest."""
     stmt = (
         select(QueryLog)
         .order_by(QueryLog.created_at.desc())
