@@ -6,7 +6,7 @@ API routes for the Vehicle Manual RAG backend.
 
 import time
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
@@ -18,12 +18,34 @@ from app.backend.api.schemas import (
     ManualResponse,
     QueryLogResponse,
 )
-from app.backend.db.models import Manual, QueryLog, Vehicle
+from app.backend.db.models import Manual, QueryLog, User, UserSession, Vehicle
 from app.backend.db.session import get_db
 from app.backend.rag.pipeline import run_rag_pipeline
 from app.backend.core.helpers import _build_chunks_summary
+from app.backend.core.dependencies import get_current_user
 
 router = APIRouter()
+
+
+def _get_optional_user(
+    request: Request,
+    db: Session = Depends(get_db),
+) -> User | None:
+    """Return the current user if a valid Bearer token is provided, else None."""
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return None
+    try:
+        from fastapi.security import HTTPAuthorizationCredentials
+        from app.backend.core.dependencies import get_current_user as _get
+        creds = HTTPAuthorizationCredentials(
+            scheme="Bearer",
+            credentials=auth_header.removeprefix("Bearer ").strip(),
+        )
+        return _get(credentials=creds, db=db)
+    except HTTPException:
+        return None
+
 
 @router.get("/health", response_model=HealthResponse, tags=["system"])
 def health_check() -> HealthResponse:
@@ -31,21 +53,47 @@ def health_check() -> HealthResponse:
     return HealthResponse(status="ok")
 
 
+@router.get("/auth/me", tags=["auth"])
+def get_me(current_user: User = Depends(get_current_user)) -> dict:
+    """Return the currently logged-in user."""
+    return {
+        "id": str(current_user.id),
+        "email": current_user.email,
+        "role": current_user.role,
+        "is_active": current_user.is_active,
+    }
+
+
 @router.post("/ask", response_model=AskResponse, tags=["rag"])
 def ask_question(
     payload: AskRequest,
+    request: Request,
     db: Session = Depends(get_db),
 ) -> AskResponse:
     """
-    Answer a user question using the RAG pipeline and
-    store the interaction for later evaluation.
+    Answer a user question using the RAG pipeline.
+    Links the query log to the authenticated user session if a token is provided.
     """
-
     if not payload.question.strip():
         raise HTTPException(
             status_code=422,
             detail="question must not be empty",
         )
+
+    # ── Optional auth ─────────────────────────────────────────────────────────
+    current_user = _get_optional_user(request, db)
+
+    # ── Find session_id if user is logged in ──────────────────────────────────
+    session_id = None
+    if current_user:
+        session = (
+            db.query(UserSession)
+            .filter(UserSession.user_id == current_user.id)
+            .order_by(UserSession.created_at.desc())
+            .first()
+        )
+        if session:
+            session_id = session.id
 
     start = time.perf_counter()
 
@@ -58,24 +106,22 @@ def ask_question(
 
     retrieved_chunks = getattr(result, "retrieved_chunks", None)
 
+    # ── Link to vehicle ───────────────────────────────────────────────────────
     vehicle_id = None
-
     if payload.selected_vehicle:
         vehicle = (
             db.query(Vehicle)
-            .filter(
-                Vehicle.model.ilike(f"%{payload.selected_vehicle}%")
-            )
+            .filter(Vehicle.model.ilike(f"%{payload.selected_vehicle}%"))
             .first()
         )
+        if vehicle:
+            vehicle_id = vehicle.id
 
-    if vehicle:
-        vehicle_id = vehicle.id
-        
     log_entry = QueryLog(
         raw_question=payload.question,
         normalized_question=result.normalized_query,
-        vehicle_id=vehicle_id,  
+        session_id=session_id,
+        vehicle_id=vehicle_id,
         entities=result.entities,
         intent=result.intent,
         answer=result.answer,
@@ -97,13 +143,13 @@ def ask_question(
         )
 
     return AskResponse(
-    answer=result.answer,
-    citations=result.citations,
-    confidence=result.confidence,
-    latency_ms=latency_ms,
-    intent=result.intent,
-    entities=result.entities,
-)
+        answer=result.answer,
+        citations=result.citations,
+        confidence=result.confidence,
+        latency_ms=latency_ms,
+        intent=result.intent,
+        entities=result.entities,
+    )
 
 
 @router.get(
@@ -112,15 +158,8 @@ def ask_question(
     tags=["manuals"],
 )
 def list_manuals(
-    make: str | None = Query(
-        default=None,
-        description="Filter by vehicle make (e.g. BYD).",
-    ),
-    model_: str | None = Query(
-        default=None,
-        alias="model",
-        description="Filter by vehicle model.",
-    ),
+    make: str | None = Query(default=None, description="Filter by vehicle make."),
+    model_: str | None = Query(default=None, alias="model", description="Filter by vehicle model."),
     db: Session = Depends(get_db),
 ) -> list[Manual]:
 
@@ -128,12 +167,10 @@ def list_manuals(
 
     if make:
         stmt = stmt.where(Vehicle.make.ilike(make))
-
     if model_:
         stmt = stmt.where(Vehicle.model.ilike(model_))
 
     stmt = stmt.order_by(Vehicle.make, Vehicle.model)
-
     return db.execute(stmt).scalars().all()
 
 
@@ -147,14 +184,11 @@ def list_query_logs(
     offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
 ) -> list[QueryLog]:
-    """
-    Return recent query logs ordered from newest to oldest.
-    """
+    """Return recent query logs ordered from newest to oldest."""
     stmt = (
         select(QueryLog)
         .order_by(QueryLog.created_at.desc())
         .offset(offset)
         .limit(limit)
     )
-
     return db.execute(stmt).scalars().all()
