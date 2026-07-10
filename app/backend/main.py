@@ -1,15 +1,15 @@
 """
 FastAPI application entrypoint for the Vehicle Manual RAG backend.
- 
+
 Run locally with:
     uvicorn app.backend.main:app --reload --host 0.0.0.0 --port 8000
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from app.backend.api.schemas import RootResponse
 from app.backend.core.config import settings
 from app.backend.api.routes import router
+from app.backend.api.auth import router as auth_router
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -29,13 +29,12 @@ app.add_middleware(
 )
 
 app.include_router(router)
-
+app.include_router(auth_router)
 
 @app.get("/", response_model=RootResponse, tags=["system"])
 def read_root() -> RootResponse:
     """Returns the project name so a human/monitor can confirm the right service is up."""
     return RootResponse(project=settings.APP_NAME, version=settings.APP_VERSION)
-
 
 @app.get("/health")
 def health() -> dict:
