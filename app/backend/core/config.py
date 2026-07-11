@@ -9,6 +9,7 @@ place.
 from typing import List
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -42,14 +43,28 @@ class Settings(BaseSettings):
     # --- Ollama (local LLM) --------------------------------------------------
     OLLAMA_HOST: str = "http://ollama:11434"
     OLLAMA_MODEL: str = "qwen2.5:7b-instruct"
+    OLLAMA_TIMEOUT_SECONDS: float = 25.0
  
     # --- Embeddings / Reranker ----------------------------------------------
     EMBEDDING_MODEL: str = "paraphrase-multilingual-MiniLM-L12-v2"
     RERANKER_MODEL: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    RERANKER_ENABLED: bool = True
  
     # --- Retrieval -----------------------------------------------------------
     RETRIEVAL_TOP_K: int = 10
-    RERANK_TOP_N: int = 3
+    RERANKER_TOP_K: int = 3
+
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def parse_debug(cls, value):
+        """Treat common environment names as booleans without weakening other validation."""
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"release", "production", "prod"}:
+                return False
+            if normalized in {"development", "dev"}:
+                return True
+        return value
  
     # --- JWT settings -----------------------------------------------------------
     SECRET_KEY: str

@@ -1,27 +1,25 @@
-"""
-app/backend/core/helpers.py
+"""Small serialization helpers shared by API logging code."""
 
-Helper functions for the Vehicle Manual RAG backend.
-"""
+from __future__ import annotations
 
-def _build_chunks_summary(chunks: list | None) -> list[dict]:
-    """
-    Build a lightweight summary of retrieved chunks for logging.
+from typing import Any
 
-    Safe to call even if the pipeline doesn't yet expose retrieval results.
-    """
+
+def build_chunks_summary(chunks: list[dict[str, Any]] | None) -> list[dict[str, Any]]:
+    """Keep useful retrieval evidence while avoiding oversized query-log rows."""
     if not chunks:
         return []
-
     summary = []
-
     for chunk in chunks:
+        metadata = chunk.get("metadata") or {}
         summary.append(
             {
-                "manual": chunk.get("manual"),
-                "page": chunk.get("page"),
-                "score": chunk.get("score"),
+                "id": chunk.get("id"),
+                "manual_name": metadata.get("manual_name"),
+                "page": metadata.get("page"),
+                "section": metadata.get("section"),
+                "retrieval_score": chunk.get("retrieval_score"),
+                "reranker_score": chunk.get("reranker_score"),
             }
         )
-
     return summary

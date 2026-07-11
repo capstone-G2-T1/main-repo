@@ -2,14 +2,13 @@
 FastAPI application entrypoint for the Vehicle Manual RAG backend.
 
 Run locally with:
-    uvicorn app.backend.main:app --reload --host 0.0.0.0 --port 8000
+    uvicorn main:app --reload --host 0.0.0.0 --port 8000
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.backend.api.schemas import RootResponse
-from app.backend.core.config import settings
-from app.backend.api.routes import router
-from app.backend.api.auth import router as auth_router
+from api.schemas import RootResponse
+from core.config import settings
+from api.routes import router
 
 app = FastAPI(
     title=settings.APP_NAME,
