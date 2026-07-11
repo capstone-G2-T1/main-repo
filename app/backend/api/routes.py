@@ -58,10 +58,11 @@ def ask_question(
 
     vehicle_id = None
     vehicle = None
-    if result.entities and result.entities.get("model"):
+
+    if payload.selected_vehicle:
         vehicle = (
             db.query(Vehicle)
-            .filter(Vehicle.model.ilike(result.entities["model"]))
+            .filter(Vehicle.model.ilike(f"%{payload.selected_vehicle}%"))
             .first()
         )
     if vehicle:

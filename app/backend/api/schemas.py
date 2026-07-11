@@ -3,13 +3,16 @@ app/backend/api/schemas.py
 
 API schemas for the Vehicle Manual RAG backend.
 """
+import re
 
 from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 from typing import Any, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr, field_validator
+
+_PASSWORD_RE = re.compile(r"^(?=.*[A-Za-z])(?=.*\d).{8,}$")
 
 class HealthResponse(BaseModel):
     status: str = "ok"
@@ -111,3 +114,37 @@ class ManualMetadata(BaseModel):
     # --- populated by translator.py ---
     is_translated: bool = False
     translated_path: Optional[str] = None
+      
+      
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, v: str) -> str:
+        if not _PASSWORD_RE.match(v):
+            raise ValueError(
+                "Password must be at least 8 characters and include a letter and a number."
+            )
+        return v
+
+
+class UserResponse(BaseModel):
+    id: str
+    email: str
+    role: str
+    is_active: bool
+
+    model_config = {"from_attributes": True}
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
