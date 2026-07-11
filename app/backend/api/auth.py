@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 
-from app.backend.db.session import get_db
-from app.backend.db.models import User
+from db.session import get_db
+from db.models import User
 from app.backend.core.security import hash_password
 from app.backend.api.schemas import RegisterRequest, UserResponse
 

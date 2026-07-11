@@ -9,7 +9,7 @@ from sqlalchemy import String, UniqueConstraint, func, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.backend.db.session import Base
+from db.session import Base
 
 
 user_role_enum = Enum("admin", "user", name="user_role", create_type=False)

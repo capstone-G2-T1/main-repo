@@ -19,7 +19,7 @@ from app.backend.api.schemas import (
     QueryLogResponse,
 )
 from db.models import Manual, QueryLog, Vehicle
-from app.backend.db.session import get_db
+from db.session import get_db
 from app.backend.rag.pipeline import run_rag_pipeline
 from app.backend.core.helpers import _build_chunks_summary
 
