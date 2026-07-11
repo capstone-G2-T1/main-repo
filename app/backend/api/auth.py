@@ -3,34 +3,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from pydantic import BaseModel, EmailStr, field_validator
+
 
 from app.backend.db.session import get_db
 from app.backend.db.models import User
 from app.backend.core.security import hash_password
+from app.backend.api.schemas import RegisterRequest, UserResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
-
-class RegisterRequest(BaseModel):
-    email: EmailStr
-    password: str
-
-    @field_validator("password")
-    @classmethod
-    def password_min_length(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("Password must be at least 8 characters.")
-        return v
-
-
-class UserResponse(BaseModel):
-    id: str
-    email: str
-    role: str
-    is_active: bool
-
-    model_config = {"from_attributes": True}
 
 
 @router.post(

@@ -18,7 +18,7 @@ from app.backend.api.schemas import (
     ManualResponse,
     QueryLogResponse,
 )
-from app.backend.db.models import Manual, QueryLog, Vehicle
+from db.models import Manual, QueryLog, Vehicle
 from app.backend.db.session import get_db
 from app.backend.rag.pipeline import run_rag_pipeline
 from app.backend.core.helpers import _build_chunks_summary
@@ -59,13 +59,12 @@ def ask_question(
     retrieved_chunks = getattr(result, "retrieved_chunks", None)
 
     vehicle_id = None
+    vehicle = None
 
     if payload.selected_vehicle:
         vehicle = (
             db.query(Vehicle)
-            .filter(
-                Vehicle.model.ilike(f"%{payload.selected_vehicle}%")
-            )
+            .filter(Vehicle.model.ilike(f"%{payload.selected_vehicle}%"))
             .first()
         )
 

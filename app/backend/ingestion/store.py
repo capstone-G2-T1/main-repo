@@ -18,7 +18,7 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 
-from app.backend.db.models import Manual, ManualChunk, Vehicle
+from db.models import Manual, ManualChunk, Vehicle
 from app.backend.db.session import SessionLocal
 from app.backend.ingestion.chunker import Chunk
 from app.backend.ingestion.embedder import embed_texts
