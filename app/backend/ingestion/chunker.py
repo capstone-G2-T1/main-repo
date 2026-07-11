@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Optional
 
 from ingestion.pdf_parser import PageText
-from app.backend.api.schemas import ManualMetadata
+from api.schemas import ManualMetadata
 
 logger = logging.getLogger("chunker")
 

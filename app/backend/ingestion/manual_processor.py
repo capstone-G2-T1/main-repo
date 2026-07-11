@@ -21,7 +21,7 @@ from pathlib import Path
 from ingestion.language_detector import detect_manual_language
 from ingestion.pdf_parser import PageText, extract_pdf_pages
 from ingestion.translator import save_translated_manual, translate_pages
-from app.backend.api.schemas import ManualMetadata
+from api.schemas import ManualMetadata
 
 logger = logging.getLogger("manual_processor")
 

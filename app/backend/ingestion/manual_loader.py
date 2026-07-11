@@ -17,9 +17,8 @@ import re
 import logging
 
 from pathlib import Path
-from dataclasses import asdict
 from typing import List, Optional
-from app.backend.api.schemas import ManualMetadata
+from api.schemas import ManualMetadata
 
 
 logging.basicConfig(
@@ -137,7 +136,8 @@ def load_manuals(raw_manuals_dir: str = "data/raw_manuals") -> List[dict]:
                 metadata.make, metadata.model, metadata.year or "unknown",
                 pdf_path.name,
             )
-            results.append(asdict(metadata))
+            # ManualMetadata is a Pydantic model, not a dataclass.
+            results.append(metadata.model_dump())
 
     logger.info(
         "Manual loading complete: %d loaded, %d skipped (no make folder)",

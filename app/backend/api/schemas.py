@@ -76,7 +76,7 @@ class ManualResponse(BaseModel):
     id: UUID
     manual_name: str
     language: str
-    page_count: int | None
+    page_count: int | None = Field(validation_alias="total_pages")
     vehicle: VehicleResponse
 
     model_config = {"from_attributes": True}
@@ -88,6 +88,9 @@ class RagResult(BaseModel):
     intent: str | None = None
     entities: dict | None = None
     normalized_query: str | None = None
+    metadata_filter: dict[str, Any] = Field(default_factory=dict)
+    retrieved_chunks: list[dict[str, Any]] = Field(default_factory=list)
+    reranked_chunks: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class ManualMetadata(BaseModel):

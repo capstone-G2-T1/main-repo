@@ -11,17 +11,17 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.backend.api.schemas import (
+from api.schemas import (
     AskRequest,
     AskResponse,
     HealthResponse,
     ManualResponse,
     QueryLogResponse,
 )
-from app.backend.db.models import Manual, QueryLog, Vehicle
-from app.backend.db.session import get_db
-from app.backend.rag.pipeline import run_rag_pipeline
-from app.backend.core.helpers import _build_chunks_summary
+from db.models import Manual, QueryLog, Vehicle
+from db.session import get_db
+from rag.pipeline import run_rag_pipeline
+from core.helpers import build_chunks_summary
 
 router = APIRouter()
 
@@ -56,33 +56,34 @@ def ask_question(
 
     latency_ms = int((time.perf_counter() - start) * 1000)
 
-    retrieved_chunks = getattr(result, "retrieved_chunks", None)
-
     vehicle_id = None
-
-    if payload.selected_vehicle:
+    vehicle = None
+    if result.entities and result.entities.get("model"):
         vehicle = (
             db.query(Vehicle)
-            .filter(
-                Vehicle.model.ilike(f"%{payload.selected_vehicle}%")
-            )
+            .filter(Vehicle.model.ilike(result.entities["model"]))
             .first()
         )
-
     if vehicle:
         vehicle_id = vehicle.id
-        
+
+    chunk_log = {
+        "retrieved": build_chunks_summary(result.retrieved_chunks),
+        "reranked": build_chunks_summary(result.reranked_chunks),
+        "metadata_filter": result.metadata_filter,
+    }
     log_entry = QueryLog(
         raw_question=payload.question,
         normalized_question=result.normalized_query,
         vehicle_id=vehicle_id,  
         entities=result.entities,
         intent=result.intent,
+        metadata_filter=result.metadata_filter,
         answer=result.answer,
         citations={"items": result.citations},
         confidence=result.confidence,
         latency_seconds=latency_ms / 1000,
-        retrieved_chunks=_build_chunks_summary(retrieved_chunks),
+        retrieved_chunks=chunk_log,
     )
 
     try:
@@ -91,19 +92,16 @@ def ask_question(
         db.refresh(log_entry)
     except SQLAlchemyError:
         db.rollback()
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to save query log.",
-        )
+        # Logging is secondary: a grounded answer should still reach the user.
 
     return AskResponse(
-    answer=result.answer,
-    citations=result.citations,
-    confidence=result.confidence,
-    latency_ms=latency_ms,
-    intent=result.intent,
-    entities=result.entities,
-)
+        answer=result.answer,
+        citations=result.citations,
+        confidence=result.confidence,
+        latency_ms=latency_ms,
+        intent=result.intent,
+        entities=result.entities,
+    )
 
 
 @router.get(
