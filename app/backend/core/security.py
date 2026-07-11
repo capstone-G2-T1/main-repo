@@ -1,6 +1,8 @@
 """Password hashing utilities using bcrypt."""
 
+import hashlib
 import bcrypt
+import secrets
 
 from datetime import datetime, timedelta
 from jose import jwt
@@ -33,3 +35,12 @@ def create_access_token(user: User) -> str:
         settings.SECRET_KEY,
         algorithm=settings.JWT_ALGORITHM,
     )
+
+def generate_refresh_token() -> str:
+    """Generate a secure random refresh token."""
+    return secrets.token_urlsafe(64)
+
+
+def hash_refresh_token(token: str) -> str:
+    """Hash the refresh token before storing — never store the raw token."""
+    return hashlib.sha256(token.encode()).hexdigest()
