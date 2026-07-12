@@ -1,6 +1,7 @@
 """Reusable FastAPI authentication dependency."""
 
-import os
+from __future__ import annotations
+
 from datetime import datetime, timezone
 
 from fastapi import Depends, HTTPException, status
@@ -8,9 +9,9 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
-from db.session import get_db
+from core.config import settings
 from db.models import User
-from app.backend.core.config import settings
+from db.session import get_db
 
 _bearer = HTTPBearer()
 

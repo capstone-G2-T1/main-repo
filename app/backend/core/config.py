@@ -42,7 +42,7 @@ class Settings(BaseSettings):
  
     # --- Ollama (local LLM) --------------------------------------------------
     OLLAMA_HOST: str = "http://ollama:11434"
-    OLLAMA_MODEL: str = "qwen2.5:7b-instruct"
+    OLLAMA_MODEL: str = "qwen2.5:7b-instruct" #qwen2.5:2b
     OLLAMA_TIMEOUT_SECONDS: float = 25.0
  
     # --- Embeddings / Reranker ----------------------------------------------
@@ -67,10 +67,15 @@ class Settings(BaseSettings):
         return value
  
     # --- JWT settings -----------------------------------------------------------
-    SECRET_KEY: str
+    SECRET_KEY: str = "b7cf139f3e192b50bd62a617e7264a2a9d12126c5f287e469fa76c04f0b0fd54"
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    # --- Refresh-token cookie ----------------------------------------------
+    REFRESH_TOKEN_COOKIE_NAME: str = "refresh_token"
+    REFRESH_TOKEN_COOKIE_SECURE: bool = True
+    REFRESH_TOKEN_COOKIE_SAMESITE: str = "lax"
 
 
     model_config = SettingsConfigDict(

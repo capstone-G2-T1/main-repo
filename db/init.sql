@@ -125,8 +125,8 @@ CREATE TABLE IF NOT EXISTS sessions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE SET NULL,
     vehicle_id UUID REFERENCES vehicles(id) ON DELETE SET NULL,
-    token_hash VARCHAR(255),
-    expires_at TIMESTAMPTZ,
+    token_hash VARCHAR(255) NOT NULL UNIQUE,
+    expires_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -247,6 +247,9 @@ CREATE INDEX IF NOT EXISTS idx_sessions_user_id
 
 CREATE INDEX IF NOT EXISTS idx_sessions_vehicle_id
     ON sessions(vehicle_id);
+
+CREATE INDEX IF NOT EXISTS idx_sessions_token_hash
+    ON sessions(token_hash);
 
 CREATE INDEX IF NOT EXISTS idx_query_logs_session_id
     ON query_logs(session_id);

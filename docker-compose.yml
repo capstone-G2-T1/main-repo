@@ -25,12 +25,21 @@ services:
       - ./db:/app/db
       - ./scripts:/app/scripts
     depends_on:
-      - postgres
-      - chroma
-      - ollama
+      postgres:
+        condition: service_healthy
+      chroma:
+        condition: service_healthy
+      ollama:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - aispire_net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   # ---------------------------------------------------------
   # Next.js frontend
@@ -47,7 +56,8 @@ services:
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - aispire_net
@@ -70,6 +80,12 @@ services:
     restart: unless-stopped
     networks:
       - aispire_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aispire} -d ${POSTGRES_DB:-aispire_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
 
   # ---------------------------------------------------------
   # Chroma — vector store for manual chunk embeddings
@@ -84,6 +100,12 @@ services:
     restart: unless-stopped
     networks:
       - aispire_net
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/heartbeat', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   # ---------------------------------------------------------
   # Ollama — local LLM generation (qwen2.5:7b-instruct)
@@ -98,6 +120,12 @@ services:
     restart: unless-stopped
     networks:
       - aispire_net
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 10s
+      retries: 6
+      start_period: 15s
     # NOTE: pull the model after the container is up:
     # docker compose exec ollama ollama pull qwen2.5:7b-instruct
 
