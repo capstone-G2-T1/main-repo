@@ -91,7 +91,7 @@ services:
   # Chroma — vector store for manual chunk embeddings
   # ---------------------------------------------------------
   chroma:
-    image: chromadb/chroma:latest
+    image: chromadb/chroma:0.5.5
     container_name: aispire_chroma
     ports:
       - "8001:8000"   # mapped to host 8001 so it doesn't clash with backend's 8000
@@ -120,6 +120,13 @@ services:
     restart: unless-stopped
     networks:
       - aispire_net
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
     healthcheck:
       test: ["CMD", "ollama", "list"]
       interval: 10s
