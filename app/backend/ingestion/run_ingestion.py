@@ -45,7 +45,8 @@ def run_ingestion_for_directory(raw_manuals_dir: str = "data/raw_manuals") -> li
     """
     # Local import: manual_loader.py lives at the repo root alongside this
     # package, not inside it -- importing it eagerly at module load time
-    # would make `ingestion` depend on being run from that exact layout.
+    # would make `ingestion` depend on being run from that exact layout.  
+    
     from manual_loader import load_manuals
 
     manual_dicts = load_manuals(raw_manuals_dir)

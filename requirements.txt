@@ -27,3 +27,4 @@ transformers==4.45.2
 python-jose[cryptography]==3.3.0
 bcrypt==4.2.0
 email-validator==2.2.0
+sentence-transformers==3.1.1

@@ -223,6 +223,8 @@ main-repo/
 ├── requirements.txt
 ├── .env.example
 ├── db/
+│   ├── models.py
+│   ├── session.py
 │   └── init.sql
 ├── app/
 │   ├── backend/
@@ -232,9 +234,6 @@ main-repo/
 │   │   │   └── routes.py
 │   │   ├── core/
 │   │   │   └── config.py
-│   │   ├── db/
-│   │   │   ├── models.py
-│   │   │   └── session.py
 │   │   ├── rag/
 │   │   │   ├── query_normalizer.py
 │   │   │   ├── ner_extractor.py

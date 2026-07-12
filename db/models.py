@@ -160,8 +160,8 @@ class UserSession(Base):
     vehicle_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("vehicles.id", ondelete="SET NULL")
     )
-    token_hash: Mapped[str | None] = mapped_column(String(255))
-    expires_at: Mapped[datetime | None]
+    token_hash: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         nullable=False, server_default=func.now()
     )

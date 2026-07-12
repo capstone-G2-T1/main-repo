@@ -18,10 +18,11 @@ from api.schemas import (
     ManualResponse,
     QueryLogResponse,
 )
-from db.models import Manual, QueryLog, Vehicle
+from db.models import Manual, QueryLog, User, Vehicle
 from db.session import get_db
 from rag.pipeline import run_rag_pipeline
 from core.helpers import build_chunks_summary
+from core.dependencies import get_current_user
 
 router = APIRouter()
 
@@ -93,7 +94,7 @@ def ask_question(
         db.refresh(log_entry)
     except SQLAlchemyError:
         db.rollback()
-        # Logging is secondary: a grounded answer should still reach the user.
+
 
     return AskResponse(
         answer=result.answer,
@@ -145,9 +146,13 @@ def list_query_logs(
     limit: int = Query(default=50, ge=1, le=500),
     offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> list[QueryLog]:
     """
     Return recent query logs ordered from newest to oldest.
+
+    Requires authentication: query logs can contain raw user questions
+    and full retrieval traces, so this endpoint is not public.
     """
     stmt = (
         select(QueryLog)
