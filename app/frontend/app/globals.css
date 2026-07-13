@@ -1,0 +1,157 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Exo+2:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Noto+Sans+Arabic:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── CSS Custom Properties (Alpha EV Design System) ─────────────────────── */
+:root {
+  /* Backgrounds */
+  --bg0:  #06080F;   /* deep space */
+  --bg1:  #0A0E1C;   /* surface */
+  --bg2:  #0F1525;   /* card */
+  --bg3:  #141B2E;   /* elevated */
+
+  /* Borders */
+  --bd:   #1C2640;
+  --bd2:  #283660;
+
+  /* Accents */
+  --cyan:     #00C9FF;
+  --cyan2:    #00A3D4;
+  --cyan-dim: rgba(0, 201, 255, 0.12);
+  --cyan-glow: 0 0 28px rgba(0, 201, 255, 0.35);
+  --orange:   #FF5E1A;
+  --gold:     #FFB800;
+
+  /* Text */
+  --txt:  #E2E8F4;
+  --txt2: #8898BB;
+  --txt3: #4A587A;
+
+  /* Fonts */
+  --font-display: 'Orbitron', monospace;
+  --font-body:    'Exo 2', sans-serif;
+  --font-arabic:  'Noto Sans Arabic', sans-serif;
+
+  /* Radius */
+  --radius:   8px;
+  --radius-lg: 16px;
+
+  /* Transition */
+  --tr: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── Base ───────────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--bg0);
+  color: var(--txt);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+[dir="rtl"] body,
+[dir="rtl"] {
+  font-family: var(--font-arabic);
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg0); }
+::-webkit-scrollbar-thumb { background: var(--bd2); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--cyan); }
+
+/* ─── Keyframes ──────────────────────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes slideFromLeft {
+  from { opacity: 0; transform: translateX(56px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideFromRight {
+  from { opacity: 0; transform: translateX(-56px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.94); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes pulseCyan {
+  0%, 100% { box-shadow: 0 0 14px rgba(0, 201, 255, 0.2); }
+  50%       { box-shadow: 0 0 32px rgba(0, 201, 255, 0.55); }
+}
+@keyframes scanY {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(500%); }
+}
+@keyframes gridReveal {
+  from { opacity: 0; }
+  to   { opacity: 0.45; }
+}
+
+/* ─── Utility classes ────────────────────────────────────────────────────── */
+.animate-fade-up    { animation: fadeUp        0.6s ease both; }
+.animate-fade-in    { animation: fadeIn        0.4s ease both; }
+.animate-slide-l    { animation: slideFromLeft 0.55s ease both; }
+.animate-slide-r    { animation: slideFromRight 0.55s ease both; }
+.animate-scale-in   { animation: scaleIn       0.45s ease both; }
+
+.font-display { font-family: var(--font-display) !important; }
+.glow-text    { color: var(--cyan); text-shadow: 0 0 20px rgba(0, 201, 255, 0.5); }
+.glass {
+  background: rgba(10, 14, 28, 0.75);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+/* ─── Hero grid background ───────────────────────────────────────────────── */
+.hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(28, 38, 64, 0.6) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(28, 38, 64, 0.6) 1px, transparent 1px);
+  background-size: 72px 72px;
+  opacity: 0;
+  animation: gridReveal 1s ease 0.3s both;
+  pointer-events: none;
+}
+
+/* ─── Hero scan line ─────────────────────────────────────────────────────── */
+.hero-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+  opacity: 0.3;
+  animation: scanY 8s linear infinite;
+  pointer-events: none;
+}
+
+/* ─── Focus ring ─────────────────────────────────────────────────────────── */
+*:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
