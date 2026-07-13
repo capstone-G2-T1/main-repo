@@ -2,10 +2,11 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Zap, AlertCircle, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { login } from "@/lib/api";
 import { useLanguage } from "@/components/providers/LanguageProvider";
+import { loginUser, ApiError } from "@/lib/api";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -15,6 +16,7 @@ export default function LoginPage() {
   const [errors, setErrors] = useState<{ email?: string; password?: string; general?: string }>({});
   const { language } = useLanguage();
   const isRTL = language === "ar";
+  const router = useRouter();
 
   const validate = () => {
     const e: typeof errors = {};
@@ -32,19 +34,16 @@ export default function LoginPage() {
     setLoading(true);
     setErrors({});
     try {
-      const data = await login(email, password);
-      localStorage.setItem("access_token", data.access_token);
-      if (data.refresh_token) localStorage.setItem("refresh_token", data.refresh_token);
-      window.location.href = "/";
-    } catch (err) {
-      setErrors({
-        general:
-          err instanceof Error
-            ? err.message
-            : isRTL
-            ? "حدث خطأ غير متوقع"
-            : "Unexpected error",
-      });
+      await loginUser(email, password);
+      router.push("/");
+    } catch (error) {
+      const message =
+        error instanceof ApiError
+          ? error.message
+          : isRTL
+            ? "تعذّر الاتصال بالخادم. يرجى المحاولة مرة أخرى."
+            : "Could not reach the server. Please try again.";
+      setErrors({ general: message });
     } finally {
       setLoading(false);
     }
@@ -60,12 +59,12 @@ export default function LoginPage() {
           <div className="w-20 h-20 bg-brand-red rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-[0_0_50px_rgba(227,30,45,0.4)]">
             <span className="text-white font-black text-3xl">α</span>
           </div>
-          <h2 className="text-4xl font-black text-white mb-4 leading-tight">Alpha<span className="text-brand-red">EV</span></h2>
+          <h2 className="text-4xl font-black text-white mb-4 leading-tight">Dalil<span className="text-brand-red">ak</span></h2>
           <p className={cn("text-white/40 text-base leading-relaxed max-w-xs mx-auto", isRTL ? "font-arabic" : "font-sans")}>
-            {isRTL ? "منصة السيارات الكهربائية الشاملة" : "The comprehensive electric vehicle platform"}
+            {isRTL ? "دليلك الذكي لكتيبات السيارات الصينية" : "Your smart guide to Chinese vehicle manuals"}
           </p>
           <div className="mt-10 grid grid-cols-3 gap-4">
-            {["BYD", "GAC", "MG", "Geely", "Haval", "VW"].map((b) => (
+            {["BYD", "Geely", "VW"].map((b) => (
               <div key={b} className="px-3 py-2 rounded-xl bg-white/5 border border-white/5 text-white/30 text-xs font-medium text-center">{b}</div>
             ))}
           </div>
@@ -76,7 +75,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md animate-fade-up animate-fill-both">
           <div className="flex items-center gap-2 mb-10 lg:hidden">
             <div className="w-8 h-8 bg-brand-red rounded-lg flex items-center justify-center"><span className="text-white font-black text-sm">α</span></div>
-            <span className="font-black text-white text-lg">Alpha<span className="text-brand-red">EV</span></span>
+            <span className="font-black text-white text-lg">Dalil<span className="text-brand-red">ak</span></span>
           </div>
 
           <div className={cn("mb-8", isRTL ? "text-right" : "")}>
@@ -84,7 +83,7 @@ export default function LoginPage() {
               {isRTL ? "أهلاً بعودتك" : "Welcome Back"}
             </h1>
             <p className={cn("text-white/40 text-sm", isRTL ? "font-arabic" : "font-sans")}>
-              {isRTL ? "سجّل دخولك للوصول إلى منصة ألفا إي في" : "Sign in to access your Alpha EV platform"}
+              {isRTL ? "سجّل دخولك للوصول إلى منصة دليلك" : "Sign in to access your Dalilak platform"}
             </p>
           </div>
 

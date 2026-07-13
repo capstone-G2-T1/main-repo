@@ -1,104 +1,95 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useLanguage } from './LanguageProvider';
-import { t } from '@/lib/utils';
-import { BRANDS } from '@/lib/vehicles';
+import React from "react";
+import { CircleGauge } from "lucide-react";
 
-export default function Footer() {
-  const { lang } = useLanguage();
+import { useLanguage } from "@/components/providers/LanguageProvider";
+import { cn } from "@/lib/utils";
 
-  const logoIcon = (
-    <div style={{
-      width: 32, height: 32, borderRadius: 6,
-      background: 'linear-gradient(135deg,var(--cyan),var(--cyan2))',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-    }}>
-      <svg viewBox="0 0 24 24" fill="none" width="16" height="16">
-        <path d="M12 2L2 7l10 5 10-5-10-5z" fill="#000"/>
-        <path d="M2 17l10 5 10-5" stroke="#000" strokeWidth="2" strokeLinecap="round"/>
-        <path d="M2 12l10 5 10-5" stroke="#000" strokeWidth="2" strokeLinecap="round"/>
-      </svg>
-    </div>
-  );
+export function Footer() {
+  const year = new Date().getFullYear();
+  const { language } = useLanguage();
+  const isRTL = language === "ar";
 
-  const colTitle = (label: string) => (
-    <div style={{
-      fontFamily: 'var(--font-display)', fontSize: '0.65rem', fontWeight: 700,
-      letterSpacing: '0.16em', textTransform: 'uppercase',
-      color: 'var(--txt3)', marginBottom: 16,
-    }}>{label}</div>
-  );
-
-  const footerLink = (label: string, href = '#') => (
-    <Link key={label} href={href} style={{
-      color: 'var(--txt2)', fontSize: '0.88rem', textDecoration: 'none',
-      transition: 'color 0.2s',
-    }}
-      onMouseEnter={e => (e.currentTarget.style.color = 'var(--cyan)')}
-      onMouseLeave={e => (e.currentTarget.style.color = 'var(--txt2)')}
-    >{label}</Link>
-  );
+  const brandTags = isRTL
+    ? ["بي واي دي", "جيلي", "فولكس فاجن"]
+    : ["BYD", "Geely", "VW"];
 
   return (
-    <footer style={{ background: 'var(--bg1)', borderTop: '1px solid var(--bd)', padding: '60px 0 32px' }}>
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px' }}>
-
-        {/* Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 40, marginBottom: 48 }}>
-          {/* Brand */}
+    <footer className="border-t border-white/5 bg-brand-black">
+      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-              {logoIcon}
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: '1rem', fontWeight: 800, letterSpacing: '0.08em', color: 'var(--txt)' }}>
-                ALPHA<span style={{ color: 'var(--cyan)' }}> EV</span>
+            <div
+              className={cn(
+                "mb-4 flex items-center gap-2.5",
+                isRTL && "flex-row-reverse justify-end",
+              )}
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-red">
+                <CircleGauge size={19} className="text-white" />
+              </div>
+
+              <span className="text-lg font-black text-white">
+                Dalil<span className="text-brand-red">ak</span>
               </span>
             </div>
-            <p style={{ fontSize: '0.88rem', color: 'var(--txt2)', lineHeight: 1.65, maxWidth: 260 }}>
-              {t(lang, 'footer', 'desc')}
+
+            <p
+              className={cn(
+                "max-w-md text-sm leading-relaxed text-white/40",
+                isRTL && "font-arabic text-right",
+              )}
+            >
+              {isRTL
+                ? "مساعد ذكاء اصطناعي لكتيبات السيارات الصينية المستوردة — اسأل بالعربية واحصل على إجابة موثقة مع رقم الصفحة من كتيب سيارتك (بي واي دي، جيلي، جي إيه سي، إم جي وغيرها)."
+                : "An AI assistant for Chinese-imported vehicle manuals — ask a question in Arabic and get a grounded answer with a page citation from your vehicle's manual (BYD, Geely, GAC, MG, and more)."}
             </p>
           </div>
 
-          {/* Company */}
           <div>
-            {colTitle(t(lang, 'footer', 'company'))}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {footerLink(t(lang, 'footer', 'about'))}
-              {footerLink(t(lang, 'footer', 'careers'))}
-              {footerLink(t(lang, 'footer', 'press'))}
-            </div>
-          </div>
+            <h3
+              className={cn(
+                "mb-4 text-sm font-semibold text-white",
+                isRTL && "font-arabic text-right",
+              )}
+            >
+              {isRTL ? "العلامات التجارية" : "Brands"}
+            </h3>
 
-          {/* Brands */}
-          <div>
-            {colTitle(t(lang, 'footer', 'brandsCol'))}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {BRANDS.map(b => footerLink(b.name, `/brands/${b.id}`))}
-            </div>
-          </div>
-
-          {/* Support */}
-          <div>
-            {colTitle(t(lang, 'footer', 'support'))}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {footerLink(t(lang, 'footer', 'contact'))}
-              {footerLink(t(lang, 'footer', 'faq'))}
-              {footerLink(t(lang, 'footer', 'warranty'))}
+            <div
+              className={cn(
+                "flex flex-wrap gap-2",
+                isRTL && "justify-end",
+              )}
+            >
+              {brandTags.map((brand) => (
+                <span
+                  key={brand}
+                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-white/40"
+                >
+                  {brand}
+                </span>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Divider */}
-        <div style={{ height: 1, background: 'linear-gradient(90deg,transparent,var(--bd2),transparent)', marginBottom: 28 }} />
-
-        {/* Bottom row */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-          <p style={{ fontSize: '0.8rem', color: 'var(--txt3)' }}>{t(lang, 'footer', 'copy')}</p>
-          <div style={{ display: 'flex', gap: 20 }}>
-            {[t(lang, 'footer', 'privacy'), t(lang, 'footer', 'terms')].map(l => (
-              <Link key={l} href="#" style={{ fontSize: '0.8rem', color: 'var(--txt3)', textDecoration: 'none' }}>{l}</Link>
-            ))}
-          </div>
+        <div
+          className={cn(
+            "mt-10 border-t border-white/5 pt-6 text-center sm:text-left",
+            isRTL && "sm:text-right",
+          )}
+        >
+          <p
+            className={cn(
+              "text-xs text-white/30",
+              isRTL && "font-arabic",
+            )}
+          >
+            © {year} Dalilak.{" "}
+            {isRTL ? "جميع الحقوق محفوظة." : "All rights reserved."}
+          </p>
         </div>
       </div>
     </footer>

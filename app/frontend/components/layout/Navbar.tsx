@@ -1,120 +1,61 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { useLanguage } from './LanguageProvider';
-import { t } from '@/lib/utils';
+import Link from "next/link";
+import { Globe, LogIn } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useLanguage } from "@/components/providers/LanguageProvider";
 
-const NAV_ITEMS = [
-  { key: 'home'   as const, href: '/' },
-  { key: 'brands' as const, href: '/brands' },
-  { key: 'models' as const, href: '/brands' },
-] as const;
+function WheelLogo({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" aria-hidden="true" className={className} fill="none">
+      <circle cx="32" cy="32" r="23" stroke="currentColor" strokeWidth="5" />
+      <circle cx="32" cy="32" r="7" stroke="currentColor" strokeWidth="4" />
+      <path d="M32 9v16M32 39v16M9 32h16M39 32h16M16 16l11 11M37 37l11 11M48 16 37 27M27 37 16 48" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+    </svg>
+  );
+}
 
-export default function Navbar() {
-  const { lang, setLang } = useLanguage();
-  const pathname = usePathname();
+export function Navbar() {
+  const { language, toggleLanguage } = useLanguage();
+  const isRTL = language === "ar";
 
   return (
-    <nav
-      style={{
-        position: 'sticky', top: 0, zIndex: 100,
-        background: 'rgba(6,8,15,0.88)',
-        backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
-        borderBottom: '1px solid var(--bd)',
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 1280, margin: '0 auto', height: 68,
-          display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between', gap: 24, padding: '0 24px',
-        }}
-      >
-        {/* Logo */}
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-          <div style={{
-            width: 36, height: 36, borderRadius: 6,
-            background: 'linear-gradient(135deg,var(--cyan),var(--cyan2))',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <svg viewBox="0 0 24 24" fill="none" width="20" height="20">
-              <path d="M12 2L2 7l10 5 10-5-10-5z" fill="#000"/>
-              <path d="M2 17l10 5 10-5" stroke="#000" strokeWidth="2" strokeLinecap="round"/>
-              <path d="M2 12l10 5 10-5" stroke="#000" strokeWidth="2" strokeLinecap="round"/>
-            </svg>
-          </div>
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: '1.05rem', fontWeight: 800, letterSpacing: '0.08em', color: 'var(--txt)', textDecoration: 'none' }}>
-            ALPHA<span style={{ color: 'var(--cyan)' }}> EV</span>
+    <header className="fixed inset-x-0 top-0 z-40 border-b border-white/5 bg-black/45 py-4 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6">
+        <Link href="/" className="group flex items-center gap-2.5" aria-label="Dalilak">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-red text-white shadow-[0_0_24px_rgba(227,30,45,0.35)] transition-transform group-hover:rotate-12 group-hover:scale-105">
+            <WheelLogo className="h-6 w-6" />
+          </span>
+          <span className="text-lg font-black tracking-tight text-white">
+            Dalil<span className="text-brand-red">ak</span>
           </span>
         </Link>
 
-        {/* Centre nav */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-          {NAV_ITEMS.map(item => {
-            const active = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
-            return (
-              <Link
-                key={item.key}
-                href={item.href}
-                style={{
-                  background: active ? 'var(--cyan-dim)' : 'transparent',
-                  color: active ? 'var(--cyan)' : 'var(--txt2)',
-                  padding: '8px 14px', borderRadius: 'var(--radius)',
-                  fontFamily: 'var(--font-body)', fontSize: '0.88rem',
-                  fontWeight: 500, letterSpacing: '0.04em',
-                  textTransform: 'uppercase', textDecoration: 'none',
-                  transition: 'var(--tr)',
-                }}
-              >
-                {t(lang, 'nav', item.key)}
-              </Link>
-            );
-          })}
-        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleLanguage}
+            className={cn(
+              "flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-white/60 transition hover:bg-white/5 hover:text-white",
+              isRTL && "font-arabic"
+            )}
+            aria-label={isRTL ? "تبديل اللغة" : "Toggle language"}
+          >
+            <Globe size={15} />
+            <span className="text-xs font-semibold">{isRTL ? "AR" : "EN"}</span>
+          </button>
 
-        {/* Right side */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          {/* Language toggle */}
-          <div style={{ display: 'flex', background: 'var(--bg2)', border: '1px solid var(--bd)', borderRadius: 'var(--radius)', overflow: 'hidden' }}>
-            {(['en', 'ar'] as const).map(l => (
-              <button
-                key={l}
-                onClick={() => setLang(l)}
-                style={{
-                  background: lang === l ? 'var(--cyan)' : 'transparent',
-                  color: lang === l ? '#000' : 'var(--txt2)',
-                  border: 'none', padding: '6px 12px', cursor: 'pointer',
-                  fontFamily: 'var(--font-display)', fontSize: '0.7rem',
-                  fontWeight: 700, letterSpacing: '0.08em', transition: 'var(--tr)',
-                }}
-              >
-                {l.toUpperCase()}
-              </button>
-            ))}
-          </div>
-
-          <Link href="/login" style={{
-            background: 'transparent', color: 'var(--txt2)',
-            border: '1px solid var(--bd)', padding: '9px 18px',
-            borderRadius: 'var(--radius)', fontSize: '0.88rem',
-            textDecoration: 'none', transition: 'var(--tr)', fontFamily: 'var(--font-body)',
-          }}>
-            {t(lang, 'nav', 'login')}
-          </Link>
-
-          <Link href="/register" style={{
-            background: 'linear-gradient(135deg,var(--cyan),var(--cyan2))',
-            color: '#000', border: 'none', padding: '10px 20px',
-            borderRadius: 'var(--radius)',
-            fontFamily: 'var(--font-display)', fontSize: '0.68rem',
-            fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
-            textDecoration: 'none', transition: 'var(--tr)', whiteSpace: 'nowrap',
-          }}>
-            {t(lang, 'nav', 'register')}
+          <Link
+            href="/login"
+            className={cn(
+              "flex items-center gap-2 rounded-lg bg-brand-red px-4 py-2.5 text-sm font-semibold text-white shadow-[0_4px_18px_rgba(227,30,45,0.3)] transition hover:-translate-y-0.5 hover:bg-brand-red-dark",
+              isRTL && "font-arabic"
+            )}
+          >
+            <LogIn size={15} />
+            {isRTL ? "تسجيل الدخول" : "Login"}
           </Link>
         </div>
       </div>
-    </nav>
+    </header>
   );
 }

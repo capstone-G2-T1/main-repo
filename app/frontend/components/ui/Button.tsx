@@ -1,74 +1,68 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
-import { cn } from '@/lib/utils';
+import React from "react";
+import { cn } from "@/lib/utils";
+import { Loader2 } from "lucide-react";
 
-interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
-  children: ReactNode;
+export type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "danger";
+export type ButtonSize = "sm" | "md" | "lg";
+
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  loading?: boolean;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
 }
 
-const BASE = {
-  display: 'inline-flex', alignItems: 'center', gap: 8,
-  border: 'none', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4,0,0.2,1)',
-  fontFamily: "'Orbitron', monospace", fontWeight: 700,
-  letterSpacing: '0.1em', textTransform: 'uppercase' as const,
-  whiteSpace: 'nowrap' as const, outline: 'none',
+const variantClasses: Record<ButtonVariant, string> = {
+  primary:
+    "bg-brand-red text-white hover:bg-brand-red-dark shadow-[0_4px_14px_rgba(227,30,45,0.3)] hover:shadow-[0_6px_20px_rgba(227,30,45,0.4)] hover:-translate-y-0.5 active:translate-y-0",
+  secondary:
+    "bg-white/5 text-white hover:bg-white/10 border border-white/10 hover:border-white/20 hover:-translate-y-0.5 active:translate-y-0",
+  outline:
+    "border-2 border-white/15 text-white hover:border-brand-red hover:text-brand-red hover:-translate-y-0.5 active:translate-y-0",
+  ghost:
+    "text-white/60 hover:bg-white/5 hover:text-white",
+  danger:
+    "bg-red-500/10 text-brand-red hover:bg-red-500/20 border border-red-500/20",
 };
 
-const VARIANTS = {
-  primary: {
-    background: 'linear-gradient(135deg,var(--cyan),var(--cyan2))',
-    color: '#000',
-  },
-  secondary: {
-    background: 'transparent',
-    color: 'var(--cyan)',
-    border: '1px solid var(--cyan)',
-  },
-  ghost: {
-    background: 'transparent',
-    color: 'var(--txt2)',
-    border: '1px solid var(--bd)',
-    fontFamily: "'Exo 2', sans-serif",
-    letterSpacing: '0.02em',
-    textTransform: 'none' as const,
-  },
+const sizeClasses: Record<ButtonSize, string> = {
+  sm: "px-4 py-2 text-xs gap-1.5 rounded-lg",
+  md: "px-6 py-3 text-sm gap-2 rounded-lg",
+  lg: "px-8 py-4 text-base gap-2.5 rounded-xl",
 };
 
-const SIZES = {
-  sm: { padding: '8px 18px', fontSize: '0.68rem', borderRadius: 'var(--radius)' },
-  md: { padding: '12px 26px', fontSize: '0.72rem', borderRadius: 'var(--radius)' },
-  lg: { padding: '15px 34px', fontSize: '0.78rem', borderRadius: 'var(--radius)' },
-};
-
-export default function Button({
-  variant = 'primary',
-  size    = 'md',
+export function Button({
+  variant = "primary",
+  size = "md",
+  loading = false,
+  leftIcon,
+  rightIcon,
   children,
-  style,
+  className,
+  disabled,
   ...props
 }: ButtonProps) {
   return (
     <button
+      className={cn(
+        "inline-flex items-center justify-center font-semibold transition-all duration-200 cursor-pointer select-none active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none",
+        variantClasses[variant],
+        sizeClasses[size],
+        className
+      )}
+      disabled={disabled || loading}
       {...props}
-      style={{
-        ...BASE,
-        ...VARIANTS[variant],
-        ...SIZES[size],
-        ...style,
-      }}
-      onMouseEnter={e => {
-        if (variant === 'primary')   e.currentTarget.style.transform = 'translateY(-2px)';
-        if (variant === 'secondary') { e.currentTarget.style.background = 'var(--cyan-dim)'; e.currentTarget.style.transform = 'translateY(-2px)'; }
-        if (variant === 'ghost')     { e.currentTarget.style.color = 'var(--txt)'; e.currentTarget.style.borderColor = 'var(--bd2)'; }
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.transform = '';
-        if (variant === 'secondary') e.currentTarget.style.background = 'transparent';
-        if (variant === 'ghost')     { e.currentTarget.style.color = 'var(--txt2)'; e.currentTarget.style.borderColor = 'var(--bd)'; }
-      }}
     >
+      {loading ? (
+        <Loader2 size={16} className="animate-spin shrink-0" />
+      ) : leftIcon ? (
+        <span className="shrink-0">{leftIcon}</span>
+      ) : null}
       {children}
+      {!loading && rightIcon && (
+        <span className="shrink-0">{rightIcon}</span>
+      )}
     </button>
   );
 }

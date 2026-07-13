@@ -1,12 +1,15 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Loader2, Send, Zap } from "lucide-react";
 
 import { Spinner } from "@/components/ui/Spinner";
-import { askQuestion } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/components/providers/LanguageProvider";
+import { MAKES } from "@/lib/vehicles";
+import { askQuestion, ApiError, UnauthenticatedError } from "@/lib/api";
+import { getUserDisplayName } from "@/lib/auth";
 
 interface Message {
   id: string;
@@ -16,6 +19,10 @@ interface Message {
     manual_name: string;
     page: number;
   }[];
+  action?: {
+    label: string;
+    href: string;
+  };
 }
 
 export function AskAISection() {
@@ -25,9 +32,15 @@ export function AskAISection() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [selectedMake, setSelectedMake] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(null);
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    setDisplayName(getUserDisplayName());
+  }, []);
 
   useEffect(() => {
     setMessages([
@@ -35,8 +48,8 @@ export function AskAISection() {
         id: "welcome",
         sender: "bot",
         text: isRTL
-          ? "مرحباً! اكتب سؤالك عن السيارة أو كتيب المالك وسأساعدك في العثور على الإجابة."
-          : "Hello! Ask a question about a vehicle or its owner’s manual, and I’ll help you find the answer.",
+          ? "مرحباً! اختر ماركة سيارتك أولاً ثم اكتب سؤالك عن السيارة أو كتيب المالك وسأساعدك في العثور على الإجابة."
+          : "Hello! Pick your vehicle's make first, then ask a question about the vehicle or its owner’s manual, and I’ll help you find the answer.",
       },
     ]);
   }, [isRTL]);
@@ -54,10 +67,12 @@ export function AskAISection() {
     });
   }, [messages, loading]);
 
+  const canSend = Boolean(input.trim()) && Boolean(selectedMake) && !loading;
+
   const handleSubmit = useCallback(async () => {
     const question = input.trim();
 
-    if (!question || loading) {
+    if (!question || !selectedMake || loading) {
       textareaRef.current?.focus();
       return;
     }
@@ -68,26 +83,47 @@ export function AskAISection() {
       text: question,
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    setMessages((previousMessages) => [...previousMessages, userMessage]);
     setInput("");
     setLoading(true);
 
     try {
-      const data = await askQuestion({ question });
+      const result = await askQuestion({
+        question,
+        selected_vehicle: selectedMake,
+      });
+
       const botMessage: Message = {
         id: `${Date.now()}-answer`,
         sender: "bot",
-        text: data.answer,
-        citations: data.citations,
+        text: result.answer,
+        citations: result.citations,
       };
-      setMessages((prev) => [...prev, botMessage]);
-    } catch {
-      const errorText = isRTL
-        ? "حدث خطأ أثناء جلب الإجابة. يرجى المحاولة مرة أخرى."
-        : "An error occurred while fetching the answer. Please try again.";
-      setMessages((prev) => [
-        ...prev,
-        { id: `${Date.now()}-error`, sender: "bot", text: errorText },
+
+      setMessages((previousMessages) => [...previousMessages, botMessage]);
+    } catch (error) {
+      let text: string;
+      let action: Message["action"];
+
+      if (error instanceof UnauthenticatedError) {
+        text = isRTL
+          ? "يجب تسجيل الدخول أولاً لطرح سؤال."
+          : "You need to sign in first to ask a question.";
+        action = {
+          label: isRTL ? "تسجيل الدخول" : "Sign in",
+          href: "/login",
+        };
+      } else if (error instanceof ApiError) {
+        text = error.message;
+      } else {
+        text = isRTL
+          ? "تعذّر الاتصال بالخادم. يرجى المحاولة مرة أخرى."
+          : "Could not reach the server. Please try again.";
+      }
+
+      setMessages((previousMessages) => [
+        ...previousMessages,
+        { id: `${Date.now()}-error`, sender: "bot", text, action },
       ]);
     } finally {
       setLoading(false);
@@ -95,18 +131,24 @@ export function AskAISection() {
         textareaRef.current?.focus();
       }, 100);
     }
-  }, [input, loading, isRTL]);
+  }, [input, loading, isRTL, selectedMake]);
 
   return (
     <section
       id="ask-ai"
-      className="flex min-h-screen scroll-mt-20 items-center bg-brand-black py-24"
+      className="relative flex min-h-screen scroll-mt-20 items-center overflow-hidden bg-brand-black py-24"
     >
-      <div className="mx-auto w-full max-w-4xl px-4 sm:px-6">
+      <div
+        className="absolute inset-0 bg-cover bg-center opacity-40"
+        style={{ backgroundImage: "url('/hero-ev.png')" }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-b from-brand-black via-brand-black/80 to-brand-black" />
+
+      <div className="relative mx-auto w-full max-w-4xl px-4 sm:px-6">
         <div className="mb-8 text-center">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-brand-red/20 bg-red-500/5 px-4 py-1.5 text-xs text-brand-red">
             <Zap size={12} className="fill-brand-red" />
-            {isRTL ? "ألفا الذكاء" : "Alpha AI"}
+            {isRTL ? "دليلك الذكي" : "Dalilak AI"}
           </div>
 
           <h2
@@ -115,7 +157,13 @@ export function AskAISection() {
               isRTL ? "font-arabic" : "font-sans",
             )}
           >
-            {isRTL ? "اسأل عن سيارتك" : "Ask AI"}
+            {displayName
+              ? isRTL
+                ? `مرحباً ${displayName}، اسأل عن سيارتك`
+                : `Hi ${displayName}, Ask AI`
+              : isRTL
+                ? "اسأل عن سيارتك"
+                : "Ask AI"}
           </h2>
 
           <p
@@ -131,6 +179,36 @@ export function AskAISection() {
         </div>
 
         <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl sm:p-6">
+          <div className="mb-4">
+            <p
+              className={cn(
+                "mb-2 text-xs font-semibold uppercase tracking-wider text-white/40",
+                isRTL && "font-arabic text-right",
+              )}
+            >
+              {isRTL ? "اختر ماركة السيارة" : "Select your vehicle make"}
+            </p>
+
+            <div className={cn("flex flex-wrap gap-2", isRTL && "flex-row-reverse")}>
+              {MAKES.map((make) => (
+                <button
+                  key={make.value}
+                  type="button"
+                  onClick={() => setSelectedMake(make.value)}
+                  className={cn(
+                    "rounded-full border px-4 py-2 text-sm font-medium transition-colors",
+                    isRTL && "font-arabic",
+                    selectedMake === make.value
+                      ? "border-brand-red bg-brand-red text-white shadow-lg shadow-red-500/20"
+                      : "border-white/10 bg-white/5 text-white/70 hover:border-white/20 hover:text-white",
+                  )}
+                >
+                  {isRTL ? make.labelAr : make.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div
             ref={messagesContainerRef}
             className="mb-4 min-h-[320px] max-h-[460px] space-y-3 overflow-y-auto rounded-2xl border border-white/5 bg-black/30 p-4"
@@ -165,6 +243,15 @@ export function AskAISection() {
                       {isRTL ? "صفحة" : "Page"} {citation.page}
                     </p>
                   ))}
+
+                  {message.action && (
+                    <Link
+                      href={message.action.href}
+                      className="mt-2 inline-block text-xs font-semibold text-brand-red hover:underline"
+                    >
+                      {message.action.label}
+                    </Link>
+                  )}
                 </div>
               </div>
             ))}
@@ -205,13 +292,19 @@ export function AskAISection() {
               }}
               rows={2}
               dir={isRTL ? "rtl" : "ltr"}
+              disabled={!selectedMake}
               placeholder={
-                isRTL
-                  ? "اكتب سؤالك..."
-                  : "Type your question..."
+                selectedMake
+                  ? isRTL
+                    ? "اكتب سؤالك..."
+                    : "Type your question..."
+                  : isRTL
+                    ? "اختر ماركة السيارة أولاً..."
+                    : "Select a vehicle make first..."
               }
               className={cn(
                 "flex-1 resize-none rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition-colors placeholder:text-white/25 focus:border-brand-red",
+                "disabled:cursor-not-allowed disabled:opacity-50",
                 isRTL && "font-arabic text-right",
               )}
             />
@@ -219,14 +312,14 @@ export function AskAISection() {
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={loading}
+              disabled={!canSend}
               className={cn(
                 "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl",
                 "bg-brand-red text-white shadow-lg shadow-red-500/20",
                 "transition-all duration-200",
                 "hover:scale-105 hover:bg-brand-red-dark",
                 "active:scale-95",
-                "disabled:cursor-wait disabled:opacity-60",
+                "disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100",
               )}
               aria-label={isRTL ? "إرسال السؤال" : "Send question"}
             >

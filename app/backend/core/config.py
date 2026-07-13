@@ -14,10 +14,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    APP_NAME: str = "AI.SPIRE G2-T1 — Vehicle Manual RAG"
+    APP_NAME: str = "Dalilak"
     APP_DESCRIPTION: str = (
-        "Retrieval-Augmented Generation assistant for Chinese-imported "
-        "vehicle manuals (BYD, GAC, Geely, MG, and similar brands)."
+        "Retrieval-Augmented Generation assistant for vehicle manuals "
+        "(BYD, Geely, and VW)."
     )
     APP_VERSION: str = "0.1.0"
     ENVIRONMENT: str = "development"

@@ -1,31 +1,36 @@
-import type { Metadata } from 'next';
-import './globals.css';
-import { LanguageProvider } from '@/components/layout/LanguageProvider';
-import Navbar from '@/components/layout/Navbar';
-import Footer from '@/components/layout/Footer';
-import FloatingChatbot from '@/components/chat/FloatingChatbot';
+import type { Metadata } from "next";
+import "./globals.css";
+import { Toaster } from "@/components/ui/Toaster";
+import { LanguageProvider } from "@/components/providers/LanguageProvider";
 
 export const metadata: Metadata = {
-  title:       'Alpha EV — Electric Vehicles Showcase',
-  description: 'Explore the world\'s finest electric and hybrid vehicles at Alpha EV. Browse BYD, GAC, Geely, Haval, MG, ORA, and Volkswagen models.',
-  keywords:    ['Alpha EV', 'electric vehicles', 'EV', 'hybrid', 'BYD', 'GAC', 'MG', 'Haval', 'Volkswagen', 'Geely', 'ORA'],
+  title: "Dalilak",
+  description: "Dalilak — An AI assistant for Chinese-imported vehicle manuals. Ask questions in Arabic and get grounded, cited answers from your vehicle's manual.",
+  keywords: "Dalilak, Chinese vehicles, vehicle manuals, BYD, Geely, GAC, MG, VW, owner's manual assistant",
+  authors: [{ name: "Dalilak" }],
   openGraph: {
-    title:       'Alpha EV — Electric Vehicles Showcase',
-    description: 'Your destination for premium electric and hybrid vehicles.',
-    siteName:    'Alpha EV',
-    type:        'website',
+    title: "Dalilak",
+    description: "An AI assistant for Chinese-imported vehicle manuals, grounded with citations.",
+    type: "website",
+    siteName: "Dalilak",
+  },
+  robots: "index, follow",
+  icons: {
+    icon: "/favicon.svg",
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
-    <html lang="en" dir="ltr" suppressHydrationWarning>
-      <body>
+    <html lang="en" suppressHydrationWarning>
+      <body className="antialiased">
         <LanguageProvider>
-          <Navbar />
-          <main>{children}</main>
-          <Footer />
-          <FloatingChatbot />
+          {children}
+          <Toaster />
         </LanguageProvider>
       </body>
     </html>

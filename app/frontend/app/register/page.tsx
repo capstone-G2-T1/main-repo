@@ -4,8 +4,8 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, Zap, AlertCircle, CheckCircle, ArrowLeft, User, Mail, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { register } from "@/lib/api";
 import { useLanguage } from "@/components/providers/LanguageProvider";
+import { registerUser, ApiError } from "@/lib/api";
 
 interface FormState {
   name: string;
@@ -55,17 +55,16 @@ export default function RegisterPage() {
     setLoading(true);
     setErrors({});
     try {
-      await register(form.email, form.password);
+      await registerUser(form.email, form.password);
       setSuccess(true);
-    } catch (err) {
-      setErrors({
-        general:
-          err instanceof Error
-            ? err.message
-            : isRTL
-            ? "حدث خطأ غير متوقع"
-            : "Unexpected error",
-      });
+    } catch (error) {
+      const message =
+        error instanceof ApiError
+          ? error.message
+          : isRTL
+            ? "تعذّر الاتصال بالخادم. يرجى المحاولة مرة أخرى."
+            : "Could not reach the server. Please try again.";
+      setErrors({ general: message });
     } finally {
       setLoading(false);
     }
@@ -103,13 +102,13 @@ export default function RegisterPage() {
             <div className="w-10 h-10 bg-brand-red rounded-xl flex items-center justify-center shadow-[0_0_30px_rgba(227,30,45,0.4)]">
               <span className="text-white font-black text-xl">α</span>
             </div>
-            <span className="text-2xl font-black text-white">Alpha<span className="text-brand-red">EV</span></span>
+            <span className="text-2xl font-black text-white">Dalil<span className="text-brand-red">ak</span></span>
           </div>
           <h2 className={cn("text-3xl font-black text-white mb-4 leading-tight", isRTL ? "font-arabic" : "font-sans")}>
-            {isRTL ? "انضم إلى" : "Join"} <br /><span className="text-brand-red">Alpha EV</span> {isRTL ? "اليوم" : "Today"}
+            {isRTL ? "انضم إلى" : "Join"} <br /><span className="text-brand-red">Dalilak</span> {isRTL ? "اليوم" : "Today"}
           </h2>
           <p className={cn("text-white/35 text-sm leading-relaxed mb-10", isRTL ? "font-arabic" : "font-sans")}>
-            {isRTL ? "أنشئ حسابك واحصل على وصول كامل لمنصة السيارات الكهربائية" : "Create your account and get full access to the EV platform"}
+            {isRTL ? "أنشئ حسابك واحصل على وصول كامل إلى مساعد كتيبات السيارات الصينية" : "Create your account and get full access to the Chinese vehicle manual assistant"}
           </p>
           <div className="space-y-4">
             {[isRTL ? "استعراض جميع السيارات" : "Browse all vehicles", isRTL ? "مقارنة المواصفات" : "Compare specifications", isRTL ? "حفظ المفضلة" : "Save favorites", isRTL ? "مجاني تماماً" : "Completely free"].map((b) => (
@@ -128,7 +127,7 @@ export default function RegisterPage() {
         <div className="w-full max-w-md animate-fade-up animate-fill-both">
           <div className="flex items-center gap-2 mb-8 lg:hidden">
             <div className="w-8 h-8 bg-brand-red rounded-lg flex items-center justify-center"><span className="text-white font-black text-sm">α</span></div>
-            <span className="font-black text-white text-lg">Alpha<span className="text-brand-red">EV</span></span>
+            <span className="font-black text-white text-lg">Dalil<span className="text-brand-red">ak</span></span>
           </div>
 
           <div className={cn("mb-8", isRTL ? "text-right" : "")}>

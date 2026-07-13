@@ -21,10 +21,12 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# Allow Next.js frontend (localhost:3000) to call the API
+# Allow the Next.js frontend to call the API, whether it's running via
+# Docker (localhost:3000) or a local `npm run dev` (localhost:3001, the
+# port Next.js falls back to when 3000 is already taken).
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "http://localhost:3001"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
