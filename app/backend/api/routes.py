@@ -36,6 +36,7 @@ def health_check() -> HealthResponse:
 def ask_question(
     payload: AskRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> AskResponse:
     """
     Answer a user question using the RAG pipeline and
@@ -122,6 +123,7 @@ def list_manuals(
         description="Filter by vehicle model.",
     ),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> list[Manual]:
 
     stmt = select(Manual).join(Manual.vehicle)

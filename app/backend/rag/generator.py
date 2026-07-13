@@ -21,14 +21,15 @@ NO_CONTEXT_REFUSAL = (
 
 def _source(chunk: RetrievedChunk) -> dict[str, Any] | None:
     manual = chunk.metadata.get("manual_name")
-    page = chunk.metadata.get("page")
+    page = chunk.metadata.get("page", chunk.metadata.get("page_number"))
     if not manual or page is None:
         return None
     try:
         page_number = int(page)
     except (TypeError, ValueError):
         return None
-    return {"manual_name": str(manual), "page": page_number, "section": chunk.metadata.get("section") or None}
+    section = chunk.metadata.get("section", chunk.metadata.get("section_title"))
+    return {"manual_name": str(manual), "page": page_number, "section": section or None}
 
 
 def _valid_citations(chunks: list[RetrievedChunk]) -> list[dict[str, Any]]:

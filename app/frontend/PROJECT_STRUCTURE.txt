@@ -1,0 +1,51 @@
+Dalilak Frontend
+================
+
+📄 .env.example
+📄 .gitignore
+📄 Dockerfile
+📄 README.md
+📁 app
+  📁 brands
+    📁 [brandId]
+      📄 page.tsx
+    📄 page.tsx
+  📁 chat
+    📄 page.tsx
+  📄 globals.css
+  📄 layout.tsx
+  📄 loading.tsx
+  📁 login
+    📄 page.tsx
+  📄 not-found.tsx
+  📄 page.tsx
+  📁 register
+    📄 page.tsx
+📁 components
+  📁 chat
+    📄 ChatbotWidget.tsx
+  📁 layout
+    📄 Footer.tsx
+    📄 Navbar.tsx
+  📁 providers
+    📄 LanguageProvider.tsx
+  📁 ui
+    📄 Badge.tsx
+    📄 Button.tsx
+    📄 Input.tsx
+    📄 Select.tsx
+    📄 Spinner.tsx
+    📄 Toaster.tsx
+📁 lib
+  📄 api.ts
+  📄 utils.ts
+  📄 vehicles.ts
+📄 next-env.d.ts
+📄 next.config.mjs
+📄 package-lock.json
+📄 package.json
+📄 postcss.config.js
+📁 public
+  📄 favicon.svg
+📄 tailwind.config.ts
+📄 tsconfig.json
