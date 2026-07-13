@@ -145,6 +145,11 @@ def store_manual_chunks(metadata: ManualMetadata, chunks: list[Chunk]) -> Ingest
                 )
 
         db.commit()
+        # Captured before the session closes below: commit() expires ORM
+        # instances by default, so vehicle.id/manual_row.id can't be read
+        # again once db.close() detaches them from their session.
+        vehicle_id = str(vehicle.id)
+        manual_id = str(manual_row.id)
     except Exception:
         db.rollback()
         logger.exception("Failed to store manual %s; rolled back Postgres changes", manual_name)
@@ -157,6 +162,6 @@ def store_manual_chunks(metadata: ManualMetadata, chunks: list[Chunk]) -> Ingest
         manual_name=manual_name,
         skipped=False,
         chunk_count=len(chunks),
-        vehicle_id=str(vehicle.id),
-        manual_id=str(manual_row.id),
+        vehicle_id=vehicle_id,
+        manual_id=manual_id,
     )
