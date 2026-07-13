@@ -6,6 +6,28 @@ from rag.entity_extractor import extract_entities
 from rag.types import ExtractedEntities
 
 
+METADATA_ALIASES = {
+    "make": {
+        "BYD": ("BYD", "Byd"),
+        "Volkswagen": ("Volkswagen", "VW", "Vw"),
+        "VW": ("Volkswagen", "VW", "Vw"),
+    },
+    "model": {
+        "Dolphin": ("Dolphin", "DOLPHIN"),
+        "Seagull": ("Seagull", "SEAGULL"),
+        "ID.4": ("ID.4", "ID4"),
+        "MK Series": ("MK Series", "MK"),
+    },
+}
+
+
+def _metadata_condition(field: str, value: str) -> dict:
+    values = METADATA_ALIASES.get(field, {}).get(value, (value,))
+    if len(values) == 1:
+        return {field: {"$eq": values[0]}}
+    return {field: {"$in": list(values)}}
+
+
 def _selected_entities(selected_vehicle: str | None) -> ExtractedEntities:
     return extract_entities(selected_vehicle or "")
 
@@ -34,9 +56,9 @@ def build_metadata_filter(
     resolved = resolve_vehicle(selected_vehicle, entities)
     conditions: list[dict] = []
     if resolved.make:
-        conditions.append({"make": {"$eq": resolved.make}})
+        conditions.append(_metadata_condition("make", resolved.make))
     if resolved.model:
-        conditions.append({"model": {"$eq": resolved.model}})
+        conditions.append(_metadata_condition("model", resolved.model))
     if resolved.year is not None:
         # Ingestion stores the year as a string in Chroma metadata.
         conditions.append({"year": {"$eq": str(resolved.year)}})
