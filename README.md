@@ -1,6 +1,6 @@
-# AI.SPIRE — G2-T1 — Vehicle Manual RAG
+# AI.SPIRE — G2-T1 — Dalilak
 
-## Alpha Intelligence — Chinese Vehicle Manual Assistant
+## Alpha Intelligence — ( Dalilak ) Chinese Vehicle Manual Assistant
 
 > **Status: enhanced starter scaffold.**
 > The current version runs the stack end-to-end with the core RAG flow prepared.
@@ -37,7 +37,7 @@ Every answer must be grounded in the retrieved manual context and include a cita
 Car owner
 → Gradio frontend
 → FastAPI backend
-→ Query translation / normalization layer
+→ Query translation/normalization layer
 → Rule-based NER extractor
 → Intent classifier
 → Metadata filter builder
@@ -84,7 +84,7 @@ The project uses **Arabic as the locked corpus language**:
 
 | Layer | Choice | Why |
 |---|---|---|
-| Frontend | Gradio | Simple local UI, runs in Docker, matches HF Spaces demo target |
+| Frontend | Next.js | Simple local UI, runs in Docker |
 | Backend API | FastAPI | Async, typed, easy to containerize |
 | Vector Store | Chroma | Free, self-hosted, supports metadata filtering |
 | Relational DB | Postgres | Manual metadata, chunk records, query logs, eval history |
@@ -215,61 +215,6 @@ The LLM receives only the selected manual chunks and must:
 
 ---
 
-## Directory Structure
-
-```
-main-repo/
-├── docker-compose.yml
-├── requirements.txt
-├── .env.example
-├── db/
-│   ├── models.py
-│   ├── session.py
-│   └── init.sql
-├── app/
-│   ├── backend/
-│   │   ├── Dockerfile
-│   │   ├── main.py
-│   │   ├── api/
-│   │   │   └── routes.py
-│   │   ├── core/
-│   │   │   └── config.py
-│   │   ├── rag/
-│   │   │   ├── query_normalizer.py
-│   │   │   ├── ner_extractor.py
-│   │   │   ├── intent_classifier.py
-│   │   │   ├── embeddings.py
-│   │   │   ├── retriever.py
-│   │   │   ├── reranker.py
-│   │   │   └── generator.py
-│   │   └── ingestion/
-│   │       ├── language_detector.py
-│   │       ├── translator.py
-│   │       ├── pdf_parser.py
-│   │       ├── chunker.py
-│   │       └── run_ingestion.py
-│   └── frontend/
-│       ├── Dockerfile
-│       └── gradio_app.py
-├── data/
-│   ├── raw_manuals/
-│   ├── translated_manuals/
-│   ├── processed_chunks/
-│   └── eval/
-│       └── test_questions.sample.json
-├── scripts/
-│   ├── run_ingestion.sh
-│   └── run_eval.py
-└── tests/
-    ├── test_chunker.py
-    ├── test_query_normalizer.py
-    ├── test_ner_extractor.py
-    ├── test_intent_classifier.py
-    └── test_retriever.py
-```
-
----
-
 ## Running the Project
 
 ### 1. Copy the environment file
@@ -318,7 +263,7 @@ The ingestion pipeline will:
 
 | Service | URL |
 |---|---|
-| Frontend (Gradio) | http://localhost:7860 |
+| Frontend  | http://localhost:3001 |
 | Backend API docs | http://localhost:8000/docs |
 
 ---
