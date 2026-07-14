@@ -2,7 +2,7 @@
   "run_timestamp": "2026-07-14T11:06:10.713244+00:00",
   "system_variant": "full_system",
   "system_variant_label": "Full system",
-  "dataset": "C:\\Users\\Lenovo\\Downloads\\test_questions.json",
+  "dataset": "data\\eval\\test_questions.json",
   "output_directory": "data\\eval\\results\\full_system",
   "page_tolerance": 0,
   "retrieval_only": true,

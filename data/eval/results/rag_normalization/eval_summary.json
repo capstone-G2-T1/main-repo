@@ -2,7 +2,7 @@
   "run_timestamp": "2026-07-14T11:04:15.909541+00:00",
   "system_variant": "rag_normalization",
   "system_variant_label": "Vector RAG + normalization",
-  "dataset": "C:\\Users\\Lenovo\\Downloads\\test_questions.json",
+  "dataset": "data\\eval\\test_questions.json",
   "output_directory": "data\\eval\\results\\rag_normalization",
   "page_tolerance": 0,
   "retrieval_only": true,

@@ -2,7 +2,7 @@
   "run_timestamp": "2026-07-14T11:04:08.914065+00:00",
   "system_variant": "baseline_vector_rag",
   "system_variant_label": "Baseline vector RAG",
-  "dataset": "C:\\Users\\Lenovo\\Downloads\\test_questions.json",
+  "dataset": "data\\eval\\test_questions.json",
   "output_directory": "data\\eval\\results\\baseline_vector_rag",
   "page_tolerance": 0,
   "retrieval_only": true,

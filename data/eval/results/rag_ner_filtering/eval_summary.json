@@ -2,7 +2,7 @@
   "run_timestamp": "2026-07-14T11:04:23.453168+00:00",
   "system_variant": "rag_ner_filtering",
   "system_variant_label": "Vector RAG + NER filtering",
-  "dataset": "C:\\Users\\Lenovo\\Downloads\\test_questions.json",
+  "dataset": "data\\eval\\test_questions.json",
   "output_directory": "data\\eval\\results\\rag_ner_filtering",
   "page_tolerance": 0,
   "retrieval_only": true,

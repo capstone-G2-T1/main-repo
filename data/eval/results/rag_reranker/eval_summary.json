@@ -2,7 +2,7 @@
   "run_timestamp": "2026-07-14T11:05:17.196655+00:00",
   "system_variant": "rag_reranker",
   "system_variant_label": "Vector RAG + reranker",
-  "dataset": "C:\\Users\\Lenovo\\Downloads\\test_questions.json",
+  "dataset": "data\\eval\\test_questions.json",
   "output_directory": "data\\eval\\results\\rag_reranker",
   "page_tolerance": 0,
   "retrieval_only": true,
