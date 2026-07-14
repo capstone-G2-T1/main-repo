@@ -37,6 +37,7 @@ IMAGE_MARKER = re.compile(r"(?:الصورة|صورة|Ø§Ù„ØµÙˆØ±Ø©|�
 PAGE_NUMBER_ONLY = re.compile(r"^\s*(?:\d+|[IVXLCDM]+)\s*$", re.IGNORECASE)
 HTML_PRESENTATION_TAGS = re.compile(r"</?(?:center|font|span|div|p|br)\b[^>]*>", re.IGNORECASE)
 HTML_TAG = re.compile(r"<[^>]+>")
+INVALID_JSON_ESCAPE = re.compile(r'\\(?!["\\/bfnrtu])')
 MARKDOWN_HEADING = re.compile(r"^\s{0,3}#{1,6}\s+(.+?)\s*$")
 SENTENCE_BOUNDARY = re.compile(r"(?<=[.!?؟؛。])\s+")
 WARNING_HEADINGS = {
@@ -209,10 +210,18 @@ def normalize_arabic_text(text: str) -> str:
 
 def load_and_validate_pages(path: Path) -> tuple[list[Page], int, int, int, int, list[str]]:
     warnings: list[str] = []
+    raw_text = path.read_text(encoding="utf-8")
     try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
+        raw = json.loads(raw_text)
     except json.JSONDecodeError as exc:
-        raise ValueError(f"invalid JSON: {exc}") from exc
+        repaired_text = INVALID_JSON_ESCAPE.sub(r"\\\\", raw_text)
+        if repaired_text == raw_text:
+            raise ValueError(f"invalid JSON: {exc}") from exc
+        try:
+            raw = json.loads(repaired_text)
+            warnings.append(f"repaired invalid JSON escapes in {path.name}")
+        except json.JSONDecodeError:
+            raise ValueError(f"invalid JSON: {exc}") from exc
     if not isinstance(raw, list):
         raise ValueError("JSON root must be a list")
 
