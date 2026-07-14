@@ -214,12 +214,12 @@ def load_and_validate_pages(path: Path) -> tuple[list[Page], int, int, int, int,
     try:
         raw = json.loads(raw_text)
     except json.JSONDecodeError as exc:
-        repaired = INVALID_JSON_ESCAPE.sub(r"\\\\", raw_text)
-        if repaired == raw_text:
+        repaired_text = INVALID_JSON_ESCAPE.sub(r"\\\\", raw_text)
+        if repaired_text == raw_text:
             raise ValueError(f"invalid JSON: {exc}") from exc
         try:
-            raw = json.loads(repaired)
-            warnings.append(f"repaired invalid JSON escapes before parsing: {exc}")
+            raw = json.loads(repaired_text)
+            warnings.append(f"repaired invalid JSON escapes in {path.name}")
         except json.JSONDecodeError:
             raise ValueError(f"invalid JSON: {exc}") from exc
     if not isinstance(raw, list):
