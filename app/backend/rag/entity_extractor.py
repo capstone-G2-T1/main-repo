@@ -20,7 +20,7 @@ class VehicleAlias:
 VEHICLES: tuple[VehicleAlias, ...] = (
     VehicleAlias("BYD", "Dolphin", ("byd dolphin", "بي واي دي دولفين", "بي واي دي dolphin", "dolphin", "دولفين")),
     VehicleAlias("BYD", "Seal", ("byd seal", "بي واي دي سيل")),
-    VehicleAlias("BYD", "Seagull", ("byd seagull", "بي واي دي سيجال")),
+    VehicleAlias("BYD", "Seagull", ("byd seagull", "byd-seagull", "byd_seagull", "بي واي دي سيجال")),
     VehicleAlias("BYD", "Sealion 7", ("byd sealion 7", "byd sealion7", "بي واي دي سيليون 7")),
     VehicleAlias("BYD", "Song Plus DM-i", ("byd song plus dm-i", "byd song plus", "بي واي دي سونج بلس")),
     VehicleAlias("GAC", "Empow", ("gac empow", "جي ايه سي امباو")),
@@ -28,7 +28,7 @@ VEHICLES: tuple[VehicleAlias, ...] = (
     VehicleAlias("GAC", "GS4", ("gac gs4", "جي ايه سي gs4")),
     VehicleAlias("GAC", "GS8", ("gac gs8", "جي ايه سي gs8")),
     VehicleAlias("Geely", "Geometry C", ("geely geometry c", "جيلي جيومتري سي", "geometry c", "جيومتري سي")),
-    VehicleAlias("Geely", "MK Series", ("geely mk series", "geely mk", "جيلي ام كي")),
+    VehicleAlias("Geely", "MK", ("geely mk series", "geely mk", "geely-mk", "geely_mk", "جيلي ام كي")),
     VehicleAlias("Geely", "Radar ZB", ("geely radar zb", "geely radar", "جيلي رادار")),
     VehicleAlias("Haval", "H1", ("haval h1", "هافال h1")),
     VehicleAlias("Haval", "H6", ("haval h6", "هافال h6")),
@@ -39,7 +39,7 @@ VEHICLES: tuple[VehicleAlias, ...] = (
     VehicleAlias("MG", "ZS EV", ("mg zs ev", "ام جي زد اس", "ام جي زي اس")),
     VehicleAlias("MG", "HS Plug-in Hybrid", ("mg hs plug-in hybrid", "mg hs", "ام جي اتش اس")),
     VehicleAlias("ORA", "Good Cat", ("ora good cat", "اورا جود كات")),
-    VehicleAlias("Volkswagen", "ID.4", ("volkswagen id.4", "volkswagen id4", "vw id.4", "فولكس فاجن id4")),
+    VehicleAlias("Volkswagen", "ID.4", ("volkswagen id.4", "volkswagen id4", "vw id.4", "vw id4", "vw-id4", "vw_id4", "فولكس فاجن id4")),
     VehicleAlias("Volkswagen", "Jetta", ("volkswagen jetta", "vw jetta", "فولكس فاجن جيتا")),
 )
 

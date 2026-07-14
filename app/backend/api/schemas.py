@@ -42,6 +42,9 @@ class AskResponse(BaseModel):
     latency_ms: float
     intent: str | None = None
     entities: dict | None = None 
+    refused: bool | None = None
+    scope: str | None = None
+    insufficient_evidence: bool | None = None
 
 class QueryLogResponse(BaseModel):
     id: UUID
@@ -94,6 +97,10 @@ class RagResult(BaseModel):
     metadata_filter: dict[str, Any] = Field(default_factory=dict)
     retrieved_chunks: list[dict[str, Any]] = Field(default_factory=list)
     reranked_chunks: list[dict[str, Any]] = Field(default_factory=list)
+    refused: bool = False
+    scope: str | None = None
+    insufficient_evidence: bool = False
+    retrieval_stats: dict[str, Any] = Field(default_factory=dict)
 
 
 class ManualMetadata(BaseModel):

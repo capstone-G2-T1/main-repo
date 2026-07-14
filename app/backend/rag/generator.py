@@ -9,6 +9,7 @@ from typing import Any, Callable
 import requests
 
 from core.config import settings
+from rag.metadata import canonicalize_metadata
 from rag.types import ExtractedEntities, RetrievedChunk
 
 logger = logging.getLogger("rag.generator")
@@ -20,15 +21,16 @@ NO_CONTEXT_REFUSAL = (
 
 
 def _source(chunk: RetrievedChunk) -> dict[str, Any] | None:
-    manual = chunk.metadata.get("manual_name")
-    page = chunk.metadata.get("page", chunk.metadata.get("page_number"))
+    metadata = canonicalize_metadata(chunk.metadata)
+    manual = metadata.get("manual_name")
+    page = metadata.get("page")
     if not manual or page is None:
         return None
     try:
         page_number = int(page)
     except (TypeError, ValueError):
         return None
-    section = chunk.metadata.get("section", chunk.metadata.get("section_title"))
+    section = metadata.get("section")
     return {"manual_name": str(manual), "page": page_number, "section": section or None}
 
 
@@ -58,7 +60,11 @@ def _build_context(chunks: list[RetrievedChunk]) -> str:
 
 def _strip_model_citations(answer: str) -> str:
     # Citations are rebuilt from trusted metadata so the model cannot invent pages.
-    lines = [line for line in answer.splitlines() if not re.match(r"^\s*(?:المصدر|المراجع|source|citation)\s*:", line, re.IGNORECASE)]
+    lines = [
+        line
+        for line in answer.splitlines()
+        if not re.match(r"^\s*(?:المصدر|المراجع|source|citation)\s*:", line, re.IGNORECASE)
+    ]
     return "\n".join(lines).strip()
 
 
@@ -87,12 +93,12 @@ def generate_answer(
 
     prompt = (
         "أنت مساعد متخصص في أدلة السيارات. أجب بالعربية فقط وباختصار. "
-        "استخدم المعلومات الموجودة في السياق حصراً ولا تخمّن. "
-        "لا تكتب أرقام صفحات أو مصادر؛ سيضيف النظام المصادر الموثوقة لاحقاً. "
+        "استخدم المعلومات الموجودة في السياق حصرا ولا تخمن. "
+        "لا تكتب أرقام صفحات أو مصادر؛ سيضيف النظام المصادر الموثوقة لاحقا. "
         "إذا لم يكف السياق، قل بوضوح إن المعلومات غير كافية.\n\n"
         f"السيارة المختارة: {selected_vehicle or 'غير محددة'}\n"
         f"نوع السؤال: {intent}\nالسؤال: {original_question}\n"
-        f"السؤال المنظّم: {normalized_question}\n\n{context}"
+        f"السؤال المنظم: {normalized_question}\n\n{context}"
     )
     payload = {"model": settings.OLLAMA_MODEL, "prompt": prompt, "stream": False}
     try:

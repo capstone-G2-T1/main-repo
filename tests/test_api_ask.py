@@ -30,6 +30,14 @@ def override_db():
     yield FakeDB()
 
 
+def override_user():
+    class User:
+        id = "user"
+        is_active = True
+
+    return User()
+
+
 def test_ask_endpoint_with_mocked_pipeline(monkeypatch):
     monkeypatch.setattr(
         routes,
@@ -44,6 +52,7 @@ def test_ask_endpoint_with_mocked_pipeline(monkeypatch):
         ),
     )
     app.dependency_overrides[get_db] = override_db
+    app.dependency_overrides[routes.get_current_user] = override_user
     try:
         response = TestClient(app).post("/ask", json={"question": "كم ضغط الإطارات؟", "selected_vehicle": None})
     finally:
@@ -55,6 +64,7 @@ def test_ask_endpoint_with_mocked_pipeline(monkeypatch):
 
 def test_ask_rejects_empty_question():
     app.dependency_overrides[get_db] = override_db
+    app.dependency_overrides[routes.get_current_user] = override_user
     try:
         response = TestClient(app).post("/ask", json={"question": "   "})
     finally:

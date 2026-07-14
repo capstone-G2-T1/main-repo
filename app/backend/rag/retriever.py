@@ -6,6 +6,7 @@ import logging
 from typing import Any, Callable
 
 from core.config import settings
+from rag.metadata import canonicalize_metadata, chunk_stable_id
 from rag.types import RetrievedChunk
 
 logger = logging.getLogger("rag.retriever")
@@ -57,7 +58,7 @@ def retrieve_chunks(
             kwargs["where"] = metadata_filter
         result = collection_getter().query(**kwargs)
     except Exception as exc:  # external service and optional model boundary
-        logger.error("Chroma retrieval failed: %s", exc.__class__.__name__)
+        logger.error("Chroma retrieval failed: %s: %s", exc.__class__.__name__, exc)
         return []
 
     ids = _first_batch(result.get("ids")) if isinstance(result, dict) else []
@@ -69,6 +70,7 @@ def retrieve_chunks(
     for index, chunk_id in enumerate(ids[:limit]):
         text = documents[index] if index < len(documents) and documents[index] else ""
         metadata = metadatas[index] if index < len(metadatas) and isinstance(metadatas[index], dict) else {}
+        metadata = canonicalize_metadata(metadata)
         distance = distances[index] if index < len(distances) else None
         try:
             score = None if distance is None else 1.0 / (1.0 + max(float(distance), 0.0))
@@ -76,3 +78,60 @@ def retrieve_chunks(
             score = None
         chunks.append(RetrievedChunk(str(chunk_id), str(text), metadata, score))
     return chunks
+
+
+def retrieve_fused_chunks(
+    original_query: str,
+    normalized_query: str,
+    metadata_filter: dict | None = None,
+    top_k: int | None = None,
+    *,
+    candidate_k: int | None = None,
+    collection_getter: Callable[[], Any] = _default_collection,
+    embedder: Callable[[str], list[float]] = _default_embed,
+) -> tuple[list[RetrievedChunk], dict[str, int]]:
+    """Retrieve original and normalized query candidates, then RRF merge them."""
+    candidate_limit = candidate_k or settings.RETRIEVAL_CANDIDATE_K
+    final_limit = top_k or settings.RETRIEVAL_TOP_K
+    original = retrieve_chunks(
+        original_query,
+        metadata_filter,
+        candidate_limit,
+        collection_getter=collection_getter,
+        embedder=embedder,
+    )
+    normalized: list[RetrievedChunk] = []
+    if normalized_query.strip() and normalized_query != original_query:
+        normalized = retrieve_chunks(
+            normalized_query,
+            metadata_filter,
+            candidate_limit,
+            collection_getter=collection_getter,
+            embedder=embedder,
+        )
+
+    fused: dict[str, RetrievedChunk] = {}
+    rrf_scores: dict[str, float] = {}
+    for result_list in (original, normalized):
+        for rank, chunk in enumerate(result_list, start=1):
+            stable_id = chunk_stable_id(chunk.id, chunk.text, chunk.metadata)
+            if stable_id not in fused:
+                fused[stable_id] = chunk
+            elif (chunk.retrieval_score or float("-inf")) > (fused[stable_id].retrieval_score or float("-inf")):
+                fused[stable_id] = chunk
+            rrf_scores[stable_id] = rrf_scores.get(stable_id, 0.0) + 1.0 / (60 + rank)
+
+    merged = sorted(
+        fused.items(),
+        key=lambda item: (rrf_scores.get(item[0], 0.0), item[1].retrieval_score or 0.0),
+        reverse=True,
+    )
+    for stable_id, chunk in merged:
+        chunk.retrieval_score = max(chunk.retrieval_score or 0.0, rrf_scores.get(stable_id, 0.0))
+    chunks = [chunk for _stable_id, chunk in merged[:final_limit]]
+    stats = {
+        "original_candidate_count": len(original),
+        "normalized_candidate_count": len(normalized),
+        "merged_candidate_count": len(merged),
+    }
+    return chunks, stats

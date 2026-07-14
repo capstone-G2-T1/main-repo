@@ -74,6 +74,10 @@ def ask_question(
         "retrieved": build_chunks_summary(result.retrieved_chunks),
         "reranked": build_chunks_summary(result.reranked_chunks),
         "metadata_filter": result.metadata_filter,
+        "scope": result.scope,
+        "refused": result.refused,
+        "insufficient_evidence": result.insufficient_evidence,
+        "retrieval_stats": result.retrieval_stats,
     }
     log_entry = QueryLog(
         raw_question=payload.question,
@@ -104,6 +108,9 @@ def ask_question(
         latency_ms=latency_ms,
         intent=result.intent,
         entities=result.entities,
+        refused=result.refused,
+        scope=result.scope,
+        insufficient_evidence=result.insufficient_evidence,
     )
 
 
