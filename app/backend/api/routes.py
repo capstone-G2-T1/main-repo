@@ -36,6 +36,7 @@ def health_check() -> HealthResponse:
 def ask_question(
     payload: AskRequest,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> AskResponse:
     """
     Answer a user question using the RAG pipeline and
@@ -73,6 +74,10 @@ def ask_question(
         "retrieved": build_chunks_summary(result.retrieved_chunks),
         "reranked": build_chunks_summary(result.reranked_chunks),
         "metadata_filter": result.metadata_filter,
+        "scope": result.scope,
+        "refused": result.refused,
+        "insufficient_evidence": result.insufficient_evidence,
+        "retrieval_stats": result.retrieval_stats,
     }
     log_entry = QueryLog(
         raw_question=payload.question,
@@ -103,6 +108,9 @@ def ask_question(
         latency_ms=latency_ms,
         intent=result.intent,
         entities=result.entities,
+        refused=result.refused,
+        scope=result.scope,
+        insufficient_evidence=result.insufficient_evidence,
     )
 
 
@@ -122,6 +130,7 @@ def list_manuals(
         description="Filter by vehicle model.",
     ),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ) -> list[Manual]:
 
     stmt = select(Manual).join(Manual.vehicle)

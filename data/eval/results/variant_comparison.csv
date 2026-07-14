@@ -1,0 +1,6 @@
+system_variant,system_variant_label,recall_at_3,recall_at_5,mrr,citation_accuracy,rejection_accuracy,avg_latency_ms,pipeline_errors,avg_returned_chunks,cold_start_latency_ms
+baseline_vector_rag,Baseline vector RAG,0.381,0.4762,0.3071,0.2143,0.625,111.21,0,4.8,7721.93
+rag_normalization,Vector RAG + normalization,0.381,0.4762,0.3071,0.2143,0.625,137.06,0,4.8,126.1
+rag_ner_filtering,Vector RAG + NER filtering,0.4524,0.6667,0.4246,0.3095,0.625,147.88,0,4.8,129.02
+rag_reranker,Vector RAG + reranker,0.5952,0.6667,0.4889,0.381,0.625,1017.6,0,4.8,2847.39
+full_system,Full system,0.7381,0.7857,0.5849,0.4524,0.625,1050.66,0,4.8,966.14

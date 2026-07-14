@@ -1,4 +1,4 @@
-from ingestion.manual_loader import load_manuals
+from manual_loader import load_manuals
 
 
 def test_load_manuals_serializes_pydantic_metadata(tmp_path):

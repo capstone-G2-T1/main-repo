@@ -14,10 +14,10 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    APP_NAME: str = "AI.SPIRE G2-T1 — Vehicle Manual RAG"
+    APP_NAME: str = "Dalilak"
     APP_DESCRIPTION: str = (
-        "Retrieval-Augmented Generation assistant for Chinese-imported "
-        "vehicle manuals (BYD, GAC, Geely, MG, and similar brands)."
+        "Retrieval-Augmented Generation assistant for vehicle manuals "
+        "(BYD, Geely, and VW)."
     )
     APP_VERSION: str = "0.1.0"
     ENVIRONMENT: str = "development"
@@ -47,12 +47,14 @@ class Settings(BaseSettings):
  
     # --- Embeddings / Reranker ----------------------------------------------
     EMBEDDING_MODEL: str = "paraphrase-multilingual-MiniLM-L12-v2"
-    RERANKER_MODEL: str = "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    RERANKER_MODEL: str = "cross-encoder/mmarco-mMiniLMv2-L12-H384-v1"
     RERANKER_ENABLED: bool = True
  
     # --- Retrieval -----------------------------------------------------------
-    RETRIEVAL_TOP_K: int = 10
-    RERANKER_TOP_K: int = 3
+    RETRIEVAL_TOP_K: int = 5
+    RETRIEVAL_CANDIDATE_K: int = 20
+    RERANKER_TOP_K: int = 5
+    MIN_RELEVANCE_SCORE: float = 0.05
 
     @field_validator("DEBUG", mode="before")
     @classmethod
